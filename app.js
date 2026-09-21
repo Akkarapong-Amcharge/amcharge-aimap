@@ -788,22 +788,14 @@
     updateWalkwayCount();
     updateObstacleList();
 
-    // ---------- ตัวอย่างตอนเปิด (แสดงสถานะทำงานจริงทันที) ----------
-    var cx = 13.421, cy = 101.104, dLat = 0.000203, dLng = 0.000415; // ~45×90 ม.
-    roofs = [{
-      ring: [
-        [cx - dLat, cy - dLng], [cx - dLat, cy + dLng],
-        [cx + dLat, cy + dLng], [cx + dLat, cy - dLng]
-      ], az: 180
-    }];
-    selectedRoof = 0;
+    // ---------- เริ่มต้นแบบว่าง — ค้นหาไซต์แล้วเพิ่มหลังคาเอง ----------
+    roofs = []; selectedRoof = -1;
     renderRoofs(); updateRoofList();
     applySegmentDefaults();
     I18N.applyStatic();
     updateLangSeg();
     $('btnConfirm').textContent = I18N.t('btn_confirm');
-    runCompute();
-    setStatus(I18N.getLang() === 'en' ? 'Example — press "Clear" then draw your real roof' : 'ตัวอย่าง — กด "ล้าง" แล้ววาดหลังคาจริงของคุณได้เลย');
+    setStatus(I18N.getLang() === 'en' ? 'Search your site, then add a roof (＋)' : 'ค้นหาไซต์ แล้วเพิ่มหลังคา (＋)');
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
