@@ -453,14 +453,24 @@
     aoa.push([E ? 'Roof' : 'หลังคา', E ? 'Area (m2)' : 'พื้นที่ (ตร.ม.)', E ? 'Module' : 'รุ่นแผง', E ? 'Tilt (deg)' : 'ความชัน (°)', E ? 'Facing (deg)' : 'ทิศ (°)', E ? 'Panels' : 'แผง', 'kWp', E ? 'Weight (t)' : 'น้ำหนัก (ตัน)', E ? 'Walkways' : 'ทางเดิน', E ? 'Obstacles' : 'สิ่งกีดขวาง']);
     per.forEach(function (pp) {
       var rf = roofs[pp.idx];
-      aoa.push([(E ? 'R' : 'ล') + (pp.idx + 1), round(pp.res.trueAreaSqm, 0), pp.mod, (rf.tiltUnknown ? '?' : rf.tilt), rf.az, pp.res.panelCount, round(pp.res.dcCapacityKwp, 1), round(pp.res.totalWeightKg / 1000, 2), rf.walkways.length, rf.obstacles.length]);
+      aoa.push([(E ? 'R' : 'ล') + (pp.idx + 1), round(pp.res.trueAreaSqm, 0), MODULES[rf.module].label, (rf.tiltUnknown ? '?' : rf.tilt), rf.az, pp.res.panelCount, round(pp.res.dcCapacityKwp, 1), round(pp.res.totalWeightKg / 1000, 2), rf.walkways.length, rf.obstacles.length]);
     });
     aoa.push([]);
     aoa.push([E ? 'COMPARE PV (whole site)' : 'เปรียบเทียบ PV (ทั้งไซต์)']);
     aoa.push([E ? 'Model' : 'รุ่น', E ? 'Panels' : 'แผง', 'kWp', E ? 'Weight (t)' : 'น้ำหนัก (ตัน)', 'kg/m2']);
-    MODULE_ORDER.forEach(function (k) { var a = computeAll(k).agg; aoa.push([MODULES[k].short, a.count, round(a.kwp, 1), round(a.weight / 1000, 1), round(a.load, 1)]); });
+    var cmp = MODULE_ORDER.map(function (k) { return { k: k, a: computeAll(k).agg }; });
+    var bestKwp = Math.max.apply(null, cmp.map(function (c) { return c.a.kwp; }));
+    cmp.forEach(function (c) {
+      var best = (c.a.kwp === bestKwp);
+      aoa.push([(best ? '* ' : '') + MODULES[c.k].label, c.a.count, round(c.a.kwp, 1), round(c.a.weight / 1000, 1), round(c.a.load, 1)]);
+    });
+    aoa.push([]);
+    aoa.push([E ? '* Best Choice = model that installs the most total capacity (kWp) on the same roof area.'
+      : '* Best Choice = รุ่นที่ติดตั้งกำลังผลิตรวมได้สูงสุด (kWp) บนพื้นที่หลังคาเดิม']);
+    aoa.push([E ? '  (Higher kWp = more energy per year on the same area; annual kWh to be added later.)'
+      : '  (kWp สูง = ได้พลังงานต่อปีมากกว่าบนพื้นที่เท่ากัน · ค่า kWh/ปี จะเพิ่มในเฟสถัดไป)']);
     var ws = XLSX.utils.aoa_to_sheet(aoa);
-    ws['!cols'] = [{ wch: 28 }, { wch: 16 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 12 }, { wch: 12 }];
+    ws['!cols'] = [{ wch: 34 }, { wch: 16 }, { wch: 30 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 12 }, { wch: 12 }];
     var wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, E ? 'Summary' : 'สรุป');
     XLSX.writeFile(wb, 'Amcharge_' + safeName() + '.xlsx');
