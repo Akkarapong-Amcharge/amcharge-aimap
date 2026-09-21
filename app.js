@@ -427,12 +427,14 @@
     return p || (en() ? '(untitled project)' : '(ยังไม่ตั้งชื่อโครงการ)');
   }
   function safeName() { return projectName().replace(/[\\/:*?"<>|]/g, '_').slice(0, 40); }
-  function setWatermark() {
+  var WM_SCREEN = 0.14, WM_DOWNLOAD = 0.29;   // ลายน้ำ: หน้าจอจาง · ไฟล์ดาวน์โหลดเข้มขึ้น ~+15%
+  function setWatermark(op) {
     var wm = document.getElementById('watermark'); if (!wm) return;
+    if (typeof op !== 'number') op = WM_SCREEN;
     var p = ($('projName') && $('projName').value.trim()) || '';
     var txt = 'Amcharge' + (p ? ' · ' + p : '') + ' · Confidential';
     var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="360" height="210">' +
-      '<text x="10" y="112" transform="rotate(-28 180 105)" font-family="Sarabun,Arial,sans-serif" font-size="19" font-weight="700" fill="rgba(255,255,255,0.14)">' + esc(txt) + '</text></svg>';
+      '<text x="10" y="112" transform="rotate(-28 180 105)" font-family="Sarabun,Arial,sans-serif" font-size="19" font-weight="700" fill="rgba(255,255,255,' + op + ')">' + esc(txt) + '</text></svg>';
     wm.style.backgroundImage = 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")';
   }
   function exportExcel() {
@@ -488,7 +490,9 @@
     if (!roofs.length) { $('dlMsg').textContent = I18N.t('dl_none'); return; }
     if (!window.html2canvas) { $('dlMsg').textContent = I18N.t('snap_fail'); return; }
     $('dlMsg').textContent = I18N.t('snap_wait');
+    setWatermark(WM_DOWNLOAD);   // เข้มขึ้นเฉพาะในไฟล์รูป
     html2canvas(map.getContainer(), { useCORS: true, allowTaint: false, logging: false, backgroundColor: null }).then(function (canvas) {
+      setWatermark();            // คืนค่าจางบนหน้าจอ
       canvas.toBlob(function (blob) {
         if (!blob) { $('dlMsg').textContent = I18N.t('snap_fail'); return; }
         var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Amcharge_' + safeName() + '.png';
@@ -496,7 +500,7 @@
         setTimeout(function () { URL.revokeObjectURL(a.href); }, 1500);
         $('dlMsg').textContent = I18N.t('snap_ok');
       });
-    }).catch(function () { $('dlMsg').textContent = I18N.t('snap_fail'); });
+    }).catch(function () { setWatermark(); $('dlMsg').textContent = I18N.t('snap_fail'); });
   }
   function updateResults(agg, per) {
     var tilts = per.map(function (p) { return p.tilt; });
@@ -673,7 +677,7 @@
       h.addEventListener('click', function () { toggleAcc(h.parentNode.getAttribute('data-acc')); });
     });
     $('btnCompute').addEventListener('click', function () { syncActiveFromUI(); runCompute(); });
-    $('projName').addEventListener('input', setWatermark);
+    $('projName').addEventListener('input', function () { setWatermark(); });
     $('searchBtn').addEventListener('click', search);
     $('search').addEventListener('keydown', function (e) { if (e.key === 'Enter') search(); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && placingObstacle) { placingObstacle = false; map.getContainer().classList.remove('drawing'); hideBanner(); } });
