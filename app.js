@@ -427,6 +427,14 @@
     return p || (en() ? '(untitled project)' : '(ยังไม่ตั้งชื่อโครงการ)');
   }
   function safeName() { return projectName().replace(/[\\/:*?"<>|]/g, '_').slice(0, 40); }
+  function setWatermark() {
+    var wm = document.getElementById('watermark'); if (!wm) return;
+    var p = ($('projName') && $('projName').value.trim()) || '';
+    var txt = 'Amcharge' + (p ? ' · ' + p : '') + ' · Confidential';
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="360" height="210">' +
+      '<text x="10" y="112" transform="rotate(-28 180 105)" font-family="Sarabun,Arial,sans-serif" font-size="19" font-weight="700" fill="rgba(255,255,255,0.14)">' + esc(txt) + '</text></svg>';
+    wm.style.backgroundImage = 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")';
+  }
   function exportExcel() {
     if (!roofs.length || !window.XLSX) { $('dlMsg').textContent = I18N.t('dl_none'); return; }
     var out = computeAll(); var agg = out.agg, per = out.per, E = en(), addr = siteAddress();
@@ -635,6 +643,8 @@
   // ---------- init ----------
   function init() {
     banner = L.DomUtil.create('div', 'draw-banner'); banner.hidden = true; map.getContainer().appendChild(banner);
+    var wm = L.DomUtil.create('div', 'wm-layer'); wm.id = 'watermark'; wm.setAttribute('aria-hidden', 'true');
+    map.getContainer().appendChild(wm); setWatermark();
     addCompass(); map.on('rotate rotateend', updateCompass);
     map.on('click', onMapClick);
     map.on('dblclick', function (e) { if (drawing) { L.DomEvent.stop(e); finishDraw(); } });
@@ -663,6 +673,7 @@
       h.addEventListener('click', function () { toggleAcc(h.parentNode.getAttribute('data-acc')); });
     });
     $('btnCompute').addEventListener('click', function () { syncActiveFromUI(); runCompute(); });
+    $('projName').addEventListener('input', setWatermark);
     $('searchBtn').addEventListener('click', search);
     $('search').addEventListener('keydown', function (e) { if (e.key === 'Enter') search(); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && placingObstacle) { placingObstacle = false; map.getContainer().classList.remove('drawing'); hideBanner(); } });

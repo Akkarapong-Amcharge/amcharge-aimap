@@ -217,6 +217,9 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   border: 2px solid var(--ink-soft); border-top: none; padding: 2px 6px;
 }
 
+/* ---- Confidential watermark (subtle, traceable — NOT screenshot-proof) ---- */
+.wm-layer { position: absolute; inset: 0; z-index: 650; pointer-events: none; background-repeat: repeat; }
+
 /* ---- Draw-mode banner over the map ---- */
 .draw-banner {
   position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
