@@ -9,7 +9,7 @@ window.I18N = (function () {
       lang_other: 'EN',
 
       s1_title: '1 · กำหนดหลังคา',
-      s1_hint: 'เพิ่มได้หลายหลัง (＋) — คลิกชิป ล1 เพื่อเลือก/ตั้งทิศรายหลัง · ✕ ลบ',
+      s1_hint: 'ทำทีละหลังจนครบหัวข้อ 2-4 แล้วกด “＋” เพิ่มหลังต่อไป · คลิกชิป ล1 เพื่อสลับหลังที่กำลังทำ (หัวข้อ 2-4 ผูกกับหลังนี้) · ✕ ลบ',
       s1_add_title: 'เพิ่มหลังคา',
       f_width: 'กว้าง (ม.)', f_length: 'ยาว (ม.)', btn_rect: '＋ ปักขนาด',
       s1_rect_hint: 'วางที่กลางแผนที่ ตามทิศ — จากแบบ as-built ไม่ต้อง digitize ภาพ',
@@ -18,7 +18,8 @@ window.I18N = (function () {
       roof_empty: 'ยังไม่มีหลังคา — กด “＋ ปักขนาด” หรือ “＋ วาดหลังคา”',
       roof_detail: function (n, area, az) { return '<b>หลังคา ' + n + '</b> · พื้นที่ ~' + area + ' ตร.ม. · ทิศ ' + az + '°'; },
       breakdown_title: 'แยกรายหลัง', lbl_facing: 'ทิศ', badge_roofs: 'หลังคา',
-      confirm_locked2: function (rc, p, k, w, o) { return '🔒 <b>ล็อกแผนแล้ว</b> · ' + rc + ' หลังคา · ' + p + ' แผง · ' + k + ' kWp · ทางเดิน ' + w + ' · สิ่งกีดขวาง ' + o + ' · กด “แก้ไขแผน” เพื่อกลับไปปรับ'; },
+      editing: 'กำลังทำ:', no_active: 'ยังไม่ได้เลือกหลังคา', varies: 'หลากหลาย',
+      confirm_locked2: function (rc, p, k) { return '🔒 <b>ล็อกแผนแล้ว</b> · ' + rc + ' หลังคา · รวม ' + p + ' แผง · ' + k + ' kWp · กด “แก้ไขแผน” เพื่อกลับไปปรับรายหลัง'; },
 
       s2_title: '2 · พารามิเตอร์',
       f_module: 'แผง / Segment', f_rooftype: 'ชนิดหลังคา',
@@ -48,16 +49,16 @@ window.I18N = (function () {
       s4_hint: 'วางวงกลมทับสิ่งที่อยู่บนหลังคา เช่น Air Inlet, คูลลิ่งทาวเวอร์, ปล่องระบาย — engine จะเว้นแผงบริเวณนั้น',
       f_ob_radius: 'รัศมี (ม.)', btn_ob_add: '＋ วางสิ่งกีดขวาง',
       s4_list_hint: 'กดปุ่มแล้ว “คลิกตำแหน่ง” บนแผนที่ 1 ครั้ง = วาง 1 วง · คลิกชิป อ1 เพื่อดู/แก้รัศมี · ✕ ลบ',
-      btn_confirm: '✓ ยืนยันแผนเสร็จสมบูรณ์', btn_edit: '✏️ แก้ไขแผน',
+      btn_confirm: '✓ เสร็จสิ้น (Complete) — สรุปทั้งไซต์', btn_edit: '✏️ แก้ไขแผน',
 
       s5_title: '5 · ผลการคำนวณ',
       m_kwp: 'กำลังติดตั้ง DC', m_count: 'จำนวนแผง', m_true: 'พื้นที่จริง', m_proj: 'พื้นที่เงา (projected)',
       m_tilt: 'ความชันที่ใช้', m_coverage: 'สัดส่วนพื้นที่ที่ใช้ได้', m_weight: 'น้ำหนักแผงรวม', m_load: 'โหลดเฉลี่ยหลังคา',
       u_panels: 'แผง', u_sqm: 'ตร.ม.', u_ton: 'ตัน', u_kgm2: 'กก./ตร.ม.',
 
-      s6_title: '6 · เปรียบเทียบ PV (หลังคาเดียวกัน)',
+      s6_title: '6 · เปรียบเทียบ PV (ทั้งไซต์)',
       th_model: 'รุ่น', th_panels: 'แผง', th_ton: 'ตัน', th_kgm2: 'กก./ม²',
-      s6_hint: '★ = กำลังติดตั้งสูงสุดบนหลังคานี้ (ใช้ ความชัน/ทิศ/setback ชุดเดียวกัน) · ตัวเลขจาก engine ทั้งหมด',
+      s6_hint: '★ = กำลังติดตั้งรวมสูงสุด ถ้าใช้รุ่นเดียวกันทุกหลังคา (จำลองทับทุกหลัง) · ตัวเลขจาก engine ทั้งหมด',
 
       compass_cap: 'ทิศแผง',
       // dynamic
@@ -86,7 +87,7 @@ window.I18N = (function () {
       lang_other: 'ไทย',
 
       s1_title: '1 · Define Roof',
-      s1_hint: 'Add multiple roofs (＋) — click chip R1 to select/set facing per roof · ✕ delete',
+      s1_hint: 'Finish steps 2-4 for one roof, then press “＋” for the next · click chip R1 to switch the active roof (steps 2-4 bind to it) · ✕ delete',
       s1_add_title: 'Add roof',
       f_width: 'Width (m)', f_length: 'Length (m)', btn_rect: '＋ Place size',
       s1_rect_hint: 'Placed at map center along facing — from as-built drawings, no image digitizing',
@@ -95,7 +96,8 @@ window.I18N = (function () {
       roof_empty: 'No roofs yet — press “＋ Place size” or “＋ Draw roof”',
       roof_detail: function (n, area, az) { return '<b>Roof ' + n + '</b> · area ~' + area + ' m² · facing ' + az + '°'; },
       breakdown_title: 'Per-roof breakdown', lbl_facing: 'facing', badge_roofs: 'roofs',
-      confirm_locked2: function (rc, p, k, w, o) { return '🔒 <b>Plan locked</b> · ' + rc + ' roofs · ' + p + ' panels · ' + k + ' kWp · walkways ' + w + ' · obstacles ' + o + ' · press “Edit plan” to change'; },
+      editing: 'Editing:', no_active: 'No roof selected', varies: 'varies',
+      confirm_locked2: function (rc, p, k) { return '🔒 <b>Plan locked</b> · ' + rc + ' roofs · ' + p + ' panels total · ' + k + ' kWp · press “Edit plan” to adjust per roof'; },
 
       s2_title: '2 · Parameters',
       f_module: 'Module / Segment', f_rooftype: 'Roof type',
@@ -125,16 +127,16 @@ window.I18N = (function () {
       s4_hint: 'Place a circle over rooftop items — air inlet, cooling tower, vent stack — the engine skips panels there',
       f_ob_radius: 'Radius (m)', btn_ob_add: '＋ Place obstacle',
       s4_list_hint: 'Press the button then “click a spot” on the map once = one circle · click chip O1 to view/edit radius · ✕ delete',
-      btn_confirm: '✓ Confirm plan complete', btn_edit: '✏️ Edit plan',
+      btn_confirm: '✓ Complete — site summary', btn_edit: '✏️ Edit plan',
 
       s5_title: '5 · Results',
       m_kwp: 'Installed DC', m_count: 'Panel count', m_true: 'True area', m_proj: 'Projected area',
       m_tilt: 'Tilt used', m_coverage: 'Usable area ratio', m_weight: 'Total panel weight', m_load: 'Avg roof load',
       u_panels: 'panels', u_sqm: 'm²', u_ton: 't', u_kgm2: 'kg/m²',
 
-      s6_title: '6 · Compare PV (same roof)',
+      s6_title: '6 · Compare PV (whole site)',
       th_model: 'Model', th_panels: 'Panels', th_ton: 't', th_kgm2: 'kg/m²',
-      s6_hint: '★ = highest capacity on this roof (same tilt/facing/setback) · all numbers from the engine',
+      s6_hint: '★ = highest total capacity if every roof used the same model (applied across all roofs) · all numbers from the engine',
 
       compass_cap: 'Facing',
       status_cleared: 'Cleared — place a size or press "Start drawing"',
