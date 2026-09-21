@@ -8,6 +8,10 @@ window.I18N = (function () {
       btn_search: 'ค้นหา',
       lang_other: 'EN',
 
+      f_projname: 'ชื่อโครงการ', projname_ph: 'เช่น AAPICO Hitech – หลังคาโรงงาน',
+      btn_download: '⬇ ดาวน์โหลด Excel', btn_snapshot: '📷 รูปแผนผัง (PNG)',
+      dl_none: 'ยังไม่มีข้อมูลให้ดาวน์โหลด', dl_ok: 'ดาวน์โหลดไฟล์ Excel แล้ว',
+      snap_wait: 'กำลังสร้างรูปแผนผัง…', snap_ok: 'บันทึกรูปแผนผังแล้ว', snap_fail: 'บันทึกรูปไม่สำเร็จ (ภาพดาวเทียมติดสิทธิ์ CORS) — ใช้แคปหน้าจอแทนได้',
       rb_label: 'หลังคาที่กำลังทำ', rb_none: 'ยังไม่มีหลังคา',
       btn_addroof: '＋ เพิ่มหลังคา', s1_or: 'หรือหลังคารูปทรงไม่เหลี่ยม:',
       s_summary_title: 'สรุปโครงการ — ทั้งไซต์',
@@ -93,6 +97,10 @@ window.I18N = (function () {
       btn_search: 'Search',
       lang_other: 'ไทย',
 
+      f_projname: 'Project name', projname_ph: 'e.g. AAPICO Hitech – factory roof',
+      btn_download: '⬇ Download Excel', btn_snapshot: '📷 Layout image (PNG)',
+      dl_none: 'No data to download yet', dl_ok: 'Excel file downloaded',
+      snap_wait: 'Generating layout image…', snap_ok: 'Layout image saved', snap_fail: 'Image save failed (satellite tiles are CORS-protected) — use a screenshot instead',
       rb_label: 'Active roof', rb_none: 'No roofs yet',
       btn_addroof: '＋ Add roof', s1_or: 'Or irregular shape:',
       s_summary_title: 'Project summary — whole site',

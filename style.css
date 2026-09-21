@@ -67,11 +67,15 @@ aside {
 .active-tag { display: inline-block; margin: -4px 0 10px; font-size: 11px; font-weight: 800; color: #c2410c; background: #ffedd5; border: 1px solid #fed7aa; border-radius: 999px; padding: 2px 10px; }
 .active-tag:empty { display: none; }
 
+/* ---- Project name ---- */
+.proj-bar { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; }
+.proj-bar input { font-weight: 700; font-size: 15px; }
+
 /* ---- Sticky active-roof bar ---- */
 .roof-bar { position: sticky; top: 0; z-index: 6; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; box-shadow: 0 2px 8px rgba(15,23,42,.05); }
 .rb-top { display: flex; align-items: center; gap: 8px; }
 .rb-label { font-size: 12px; font-weight: 700; color: var(--ink-soft); }
-.rb-active { font-size: 15px; font-weight: 800; color: #c2410c; background: #ffedd5; border: 1px solid #fed7aa; border-radius: 999px; padding: 2px 12px; }
+.rb-active { font-size: 15px; font-weight: 800; color: #fff; background: var(--amc); border: 1px solid var(--amc); border-radius: 999px; padding: 2px 14px; }
 .rb-active.none { color: var(--ink-soft); background: var(--panel-2); border-color: var(--line); font-size: 12.5px; font-weight: 600; }
 
 /* ---- Accordion (หัวข้อ 1-4) ---- */
@@ -83,10 +87,11 @@ aside {
 .acc-no { flex-shrink: 0; width: 26px; height: 26px; border-radius: 8px; background: var(--accent); color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 14px; }
 .acc.open .acc-no { background: var(--accent-dark); }
 .acc-title { font-size: 15px; font-weight: 700; color: var(--ink); flex-shrink: 0; }
-.acc-sum { flex: 1; text-align: right; font-size: 12px; font-weight: 700; color: #c2410c; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acc-sum { flex: 1; text-align: right; font-size: 12px; font-weight: 700; color: #2c6b82; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .acc.open .acc-sum { display: none; }
-.acc-chev { flex-shrink: 0; color: var(--ink-soft); font-size: 12px; transition: transform .18s; }
-.acc.open .acc-chev { transform: rotate(180deg); }
+.acc-chev { flex-shrink: 0; color: var(--accent-dark); font-size: 20px; line-height: 1; font-weight: 700; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 7px; background: var(--panel-2); transition: transform .18s; }
+.acc-head:hover .acc-chev { background: #dbeafe; }
+.acc.open .acc-chev { transform: rotate(180deg); background: #fff; }
 .acc-body { display: none; padding: 4px 14px 16px; border-top: 1px solid var(--line); }
 .acc.open .acc-body { display: block; }
 
@@ -112,7 +117,9 @@ button.sm { padding: 6px 10px; font-size: 13px; }
 .modal-x { background: var(--panel-2); border: none; border-radius: 8px; width: 32px; height: 32px; font-size: 15px; cursor: pointer; color: var(--ink-soft); }
 .modal-x:hover { background: #e2e8f0; }
 .modal-scroll { overflow-y: auto; padding: 18px 20px; }
-.modal-foot { padding: 12px 20px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; }
+.modal-foot { padding: 12px 20px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.foot-left { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.modal-foot .big-btn.done { flex: 0 0 auto; padding: 11px 20px; font-size: 15px; box-shadow: none; }
 .cmp-title { margin: 0 0 8px; font-size: 14px; font-weight: 700; color: var(--accent-dark); }
 
 /* ---- Controls ---- */
@@ -182,15 +189,15 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .tag-label span { position: absolute; transform: translate(-50%, -50%); white-space: nowrap; font-size: 11px; font-weight: 800; padding: 1px 7px; border-radius: 6px; border: 1.5px solid #fff; }
 .wk-tag span { background: #eab308; color: #1c1917; }   /* ทางเดิน = เหลืองสด */
 .ob-tag span { background: #dc2626; color: #fff; }      /* สิ่งกีดขวาง = แดง */
-.roof-tag span { background: #ea580c; color: #fff; }    /* หลังคา = ส้ม */
-.roof-tag.sel span { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #ea580c; }
-.roof-chip { color: #c2410c !important; }
+.roof-tag span { background: var(--amc); color: #fff; } /* หลังคา = โทน Amcharge (teal) */
+.roof-tag.sel span { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--amc); }
+.roof-chip { color: #2c6b82 !important; }
 
 /* ---- Per-roof breakdown ---- */
 .breakdown { margin-top: 10px; background: var(--panel-2); border-radius: 8px; padding: 10px 12px; }
 .bd-title { font-size: 11px; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
 .bd-row { display: flex; gap: 12px; align-items: center; font-size: 12.5px; padding: 4px 0; border-top: 1px solid var(--line); }
-.bd-tag { font-weight: 800; color: #c2410c; min-width: 28px; }
+.bd-tag { font-weight: 800; color: #2c6b82; min-width: 28px; }
 
 /* ---- Compass ---- */
 .compass { cursor: pointer; text-align: center; filter: drop-shadow(0 2px 4px rgba(0,0,0,.3)); }

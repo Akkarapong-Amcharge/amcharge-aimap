@@ -38,6 +38,13 @@
     <div id="map"></div>
 
     <aside>
+      <!-- ชื่อโครงการ (บนสุด ก่อนหัวข้อ 1) -->
+      <div class="proj-bar">
+        <label class="field"><span data-i18n="f_projname">ชื่อโครงการ</span>
+          <input id="projName" type="text" data-i18n-ph="projname_ph" placeholder="เช่น AAPICO Hitech – หลังคาโรงงาน" autocomplete="off">
+        </label>
+      </div>
+
       <!-- แถบหลังคาที่กำลังทำ (ติดบนสุดตลอด) -->
       <div id="roofBar" class="roof-bar">
         <div class="rb-top">
@@ -282,13 +289,20 @@
         </div>
       </div>
       <div class="modal-foot">
+        <div class="foot-left">
+          <button id="btnDownload" class="big-btn done" data-i18n="btn_download">⬇ ดาวน์โหลด Excel</button>
+          <button id="btnSnapshot" class="ghost" data-i18n="btn_snapshot">📷 รูปแผนผัง (PNG)</button>
+        </div>
         <button id="modalEdit" class="ghost" data-i18n="btn_edit">✏️ กลับไปแก้</button>
       </div>
+      <p id="dlMsg" class="hint" style="padding:0 20px 12px;margin:0"></p>
     </div>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/leaflet-rotate@0.2.8/dist/leaflet-rotate.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="i18n.js"></script>
   <script src="engine.js"></script>
   <script src="app.js"></script>

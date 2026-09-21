@@ -34,7 +34,7 @@
     rotate: true, touchRotate: true, shiftKeyRotate: true, rotateControl: false, bearing: 0
   }).setView([13.421, 101.104], 18);
   L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-    maxZoom: 21, maxNativeZoom: 19, attribution: 'ภาพ © Esri, Maxar, Earthstar Geographics'
+    maxZoom: 21, maxNativeZoom: 19, crossOrigin: 'anonymous', attribution: 'ภาพ © Esri, Maxar, Earthstar Geographics'
   }).addTo(map);
   L.control.scale({ metric: true, imperial: false, maxWidth: 140, position: 'bottomleft' }).addTo(map);
 
@@ -270,6 +270,8 @@
   }
 
   // ---------- walkway (per active roof) ----------
+  function wkLabel(roofIdx, i) { return I18N.t('wk_prefix') + (roofIdx + 1) + '/' + (i + 1); }
+  function obLabel(roofIdx, i) { return I18N.t('ob_prefix') + (roofIdx + 1) + '/' + (i + 1); }
   function walkwayLength(line) { var d = 0; for (var i = 0; i < line.length - 1; i++) d += map.distance(L.latLng(line[i][0], line[i][1]), L.latLng(line[i + 1][0], line[i + 1][1])); return d; }
   function startWalkwayDraw() {
     if (!aRoof()) { setStatus(en() ? 'Add a roof first' : 'เพิ่มหลังคาก่อน'); return; }
@@ -281,12 +283,12 @@
   function cancelWalkwayDraw() { if (!drawing || drawMode !== 'walkway') return; drawing = false; points = []; map.doubleClickZoom.enable(); drawLayer.clearLayers(); endDrawUI(); }
   function renderWalkways() {
     walkwayLayer.clearLayers();
-    roofs.forEach(function (rf) {
+    roofs.forEach(function (rf, roofIdx) {
       rf.walkways.forEach(function (wk, idx) {
         var lls = wk.line.map(function (p) { return L.latLng(p[0], p[1]); });
         L.polyline(lls, { color: '#eab308', weight: 3, dashArray: '6 5' }).addTo(walkwayLayer);
         var mid = lls[Math.floor(lls.length / 2)];
-        L.marker(mid, { icon: L.divIcon({ className: 'tag-label wk-tag', html: '<span>' + I18N.t('wk_prefix') + (idx + 1) + '</span>', iconSize: [0, 0] }), interactive: false, keyboard: false }).addTo(walkwayLayer);
+        L.marker(mid, { icon: L.divIcon({ className: 'tag-label wk-tag', html: '<span>' + wkLabel(roofIdx, idx) + '</span>', iconSize: [0, 0] }), interactive: false, keyboard: false }).addTo(walkwayLayer);
       });
     });
   }
@@ -297,7 +299,7 @@
       if (!arr.length) { host.innerHTML = '<span class="hint">' + I18N.t('wk_empty') + '</span>'; selectedWk = -1; }
       else {
         host.innerHTML = arr.map(function (_, i) {
-          return '<span class="wk-item' + (i === selectedWk ? ' sel' : '') + '"><button class="wk-chip" data-i="' + i + '">' + I18N.t('wk_prefix') + (i + 1) + '</button><button class="wk-del" data-i="' + i + '" title="' + I18N.t('btn_del_line') + '">✕</button></span>';
+          return '<span class="wk-item' + (i === selectedWk ? ' sel' : '') + '"><button class="wk-chip" data-i="' + i + '">' + wkLabel(active, i) + '</button><button class="wk-del" data-i="' + i + '" title="' + I18N.t('btn_del_line') + '">✕</button></span>';
         }).join('');
         Array.prototype.forEach.call(host.querySelectorAll('.wk-chip'), function (b) { b.addEventListener('click', function () { var i = parseInt(b.getAttribute('data-i'), 10); selectedWk = (selectedWk === i ? -1 : i); updateWalkwayList(); }); });
         Array.prototype.forEach.call(host.querySelectorAll('.wk-del'), function (b) { b.addEventListener('click', function () { deleteWalkway(parseInt(b.getAttribute('data-i'), 10)); }); });
@@ -310,7 +312,7 @@
     var host = $('wkDetail'); if (!host) return; var rf = aRoof();
     if (!rf || selectedWk < 0 || selectedWk >= rf.walkways.length) { host.innerHTML = ''; host.hidden = true; return; }
     var wk = rf.walkways[selectedWk]; host.hidden = false;
-    host.innerHTML = I18N.t('wk_detail', selectedWk + 1, fmt(walkwayLength(wk.line), 1)) +
+    host.innerHTML = I18N.t('wk_detail', wkLabel(active, selectedWk), fmt(walkwayLength(wk.line), 1)) +
       '<div class="row" style="align-items:flex-end;margin-top:6px"><label class="field">' + I18N.t('lbl_width') + '<input id="wkWidthEdit" type="number" value="' + wk.width + '" min="0.3" step="0.1"></label><button id="wkDelSel" class="ghost">' + I18N.t('btn_del_line') + '</button></div>';
     $('wkWidthEdit').addEventListener('change', function () { var v = parseFloat($('wkWidthEdit').value); if (v > 0) { rf.walkways[selectedWk].width = v; renderWalkways(); runCompute(); } });
     $('wkDelSel').addEventListener('click', function () { deleteWalkway(selectedWk); });
@@ -329,10 +331,10 @@
   }
   function renderObstacles() {
     obstacleLayer.clearLayers();
-    roofs.forEach(function (rf) {
+    roofs.forEach(function (rf, roofIdx) {
       rf.obstacles.forEach(function (ob, idx) {
         L.circle([ob.lat, ob.lng], { radius: ob.r, color: '#ef4444', weight: 2, fillColor: '#ef4444', fillOpacity: 0.28 }).addTo(obstacleLayer);
-        L.marker([ob.lat, ob.lng], { icon: L.divIcon({ className: 'tag-label ob-tag', html: '<span>' + I18N.t('ob_prefix') + (idx + 1) + '</span>', iconSize: [0, 0] }), interactive: false, keyboard: false }).addTo(obstacleLayer);
+        L.marker([ob.lat, ob.lng], { icon: L.divIcon({ className: 'tag-label ob-tag', html: '<span>' + obLabel(roofIdx, idx) + '</span>', iconSize: [0, 0] }), interactive: false, keyboard: false }).addTo(obstacleLayer);
       });
     });
   }
@@ -343,7 +345,7 @@
       if (!arr.length) { host.innerHTML = '<span class="hint">' + I18N.t('ob_empty') + '</span>'; selectedOb = -1; }
       else {
         host.innerHTML = arr.map(function (_, i) {
-          return '<span class="wk-item ob' + (i === selectedOb ? ' sel' : '') + '"><button class="wk-chip" data-i="' + i + '">' + I18N.t('ob_prefix') + (i + 1) + '</button><button class="wk-del" data-i="' + i + '" title="' + I18N.t('btn_del_one') + '">✕</button></span>';
+          return '<span class="wk-item ob' + (i === selectedOb ? ' sel' : '') + '"><button class="wk-chip" data-i="' + i + '">' + obLabel(active, i) + '</button><button class="wk-del" data-i="' + i + '" title="' + I18N.t('btn_del_one') + '">✕</button></span>';
         }).join('');
         Array.prototype.forEach.call(host.querySelectorAll('.wk-chip'), function (b) { b.addEventListener('click', function () { var i = parseInt(b.getAttribute('data-i'), 10); selectedOb = (selectedOb === i ? -1 : i); updateObstacleList(); }); });
         Array.prototype.forEach.call(host.querySelectorAll('.wk-del'), function (b) { b.addEventListener('click', function () { deleteObstacle(parseInt(b.getAttribute('data-i'), 10)); }); });
@@ -356,7 +358,7 @@
     var host = $('obDetail'); if (!host) return; var rf = aRoof();
     if (!rf || selectedOb < 0 || selectedOb >= rf.obstacles.length) { host.innerHTML = ''; host.hidden = true; return; }
     var ob = rf.obstacles[selectedOb]; host.hidden = false;
-    host.innerHTML = I18N.t('ob_detail', selectedOb + 1, fmt(ob.r * 2, 1)) +
+    host.innerHTML = I18N.t('ob_detail', obLabel(active, selectedOb), fmt(ob.r * 2, 1)) +
       '<div class="row" style="align-items:flex-end;margin-top:6px"><label class="field">' + I18N.t('lbl_radius') + '<input id="obRadiusEdit" type="number" value="' + ob.r + '" min="0.3" step="0.1"></label><button id="obDelSel" class="ghost">' + I18N.t('btn_del_one') + '</button></div>';
     $('obRadiusEdit').addEventListener('change', function () { var v = parseFloat($('obRadiusEdit').value); if (v > 0) { rf.obstacles[selectedOb].r = v; renderObstacles(); runCompute(); } });
     $('obDelSel').addEventListener('click', function () { deleteObstacle(selectedOb); });
@@ -408,9 +410,76 @@
     var out = computeAll(); lastAgg = out.agg; lastPer = out.per;
     drawPanels(out.panels);
     updateResults(out.agg, out.per);
+    if ($('dlMsg')) $('dlMsg').textContent = '';
     summaryOpen = true; $('summaryModal').classList.add('open');
   }
   function closeSummary() { summaryOpen = false; if ($('summaryModal')) $('summaryModal').classList.remove('open'); }
+
+  // ---------- export ----------
+  function round(x, d) { var m = Math.pow(10, d); return Math.round((x || 0) * m) / m; }
+  function siteAddress() {
+    var q = ($('search') && $('search').value.trim()) || '';
+    var c = map.getCenter();
+    return { link: q, coords: c.lat.toFixed(6) + ', ' + c.lng.toFixed(6) };
+  }
+  function projectName() {
+    var p = ($('projName') && $('projName').value.trim()) || '';
+    return p || (en() ? '(untitled project)' : '(ยังไม่ตั้งชื่อโครงการ)');
+  }
+  function safeName() { return projectName().replace(/[\\/:*?"<>|]/g, '_').slice(0, 40); }
+  function exportExcel() {
+    if (!roofs.length || !window.XLSX) { $('dlMsg').textContent = I18N.t('dl_none'); return; }
+    var out = computeAll(); var agg = out.agg, per = out.per, E = en(), addr = siteAddress();
+    var d = new Date(), p2 = function (n) { return ('0' + n).slice(-2); };
+    var dateStr = d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()) + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes());
+    var aoa = [];
+    aoa.push([E ? 'Project' : 'ชื่อโครงการ', projectName()]);
+    aoa.push([E ? 'Map location / link' : 'ตำแหน่ง / ลิงก์แผนที่', addr.link]);
+    aoa.push([E ? 'Coordinates (site center)' : 'พิกัด (กลางไซต์)', addr.coords]);
+    aoa.push([E ? 'Exported' : 'วันที่ออกรายงาน', dateStr]);
+    aoa.push([E ? 'Source' : 'ที่มา', 'Amcharge AI Roof Planner (demo) · Esri World Imagery']);
+    aoa.push([]);
+    aoa.push([E ? 'SITE TOTAL' : 'รวมทั้งไซต์']);
+    aoa.push([E ? 'Installed DC (kWp)' : 'กำลังติดตั้ง DC (kWp)', round(agg.kwp, 1)]);
+    aoa.push([E ? 'Panels' : 'จำนวนแผง', agg.count]);
+    aoa.push([E ? 'True area (m2)' : 'พื้นที่จริง (ตร.ม.)', round(agg.trueA, 0)]);
+    aoa.push([E ? 'Projected area (m2)' : 'พื้นที่เงา (ตร.ม.)', round(agg.projected, 0)]);
+    aoa.push([E ? 'Usable ratio (%)' : 'สัดส่วนพื้นที่ที่ใช้ได้ (%)', round(agg.coverage * 100, 0)]);
+    aoa.push([E ? 'Total weight (t)' : 'น้ำหนักรวม (ตัน)', round(agg.weight / 1000, 1)]);
+    aoa.push([E ? 'Avg roof load (kg/m2)' : 'โหลดเฉลี่ยหลังคา (กก./ตร.ม.)', round(agg.load, 1)]);
+    aoa.push([E ? 'Roofs' : 'จำนวนหลังคา', roofs.length]);
+    aoa.push([]);
+    aoa.push([E ? 'PER-ROOF BREAKDOWN' : 'แยกรายหลัง']);
+    aoa.push([E ? 'Roof' : 'หลังคา', E ? 'Area (m2)' : 'พื้นที่ (ตร.ม.)', E ? 'Module' : 'รุ่นแผง', E ? 'Tilt (deg)' : 'ความชัน (°)', E ? 'Facing (deg)' : 'ทิศ (°)', E ? 'Panels' : 'แผง', 'kWp', E ? 'Weight (t)' : 'น้ำหนัก (ตัน)', E ? 'Walkways' : 'ทางเดิน', E ? 'Obstacles' : 'สิ่งกีดขวาง']);
+    per.forEach(function (pp) {
+      var rf = roofs[pp.idx];
+      aoa.push([(E ? 'R' : 'ล') + (pp.idx + 1), round(pp.res.trueAreaSqm, 0), pp.mod, (rf.tiltUnknown ? '?' : rf.tilt), rf.az, pp.res.panelCount, round(pp.res.dcCapacityKwp, 1), round(pp.res.totalWeightKg / 1000, 2), rf.walkways.length, rf.obstacles.length]);
+    });
+    aoa.push([]);
+    aoa.push([E ? 'COMPARE PV (whole site)' : 'เปรียบเทียบ PV (ทั้งไซต์)']);
+    aoa.push([E ? 'Model' : 'รุ่น', E ? 'Panels' : 'แผง', 'kWp', E ? 'Weight (t)' : 'น้ำหนัก (ตัน)', 'kg/m2']);
+    MODULE_ORDER.forEach(function (k) { var a = computeAll(k).agg; aoa.push([MODULES[k].short, a.count, round(a.kwp, 1), round(a.weight / 1000, 1), round(a.load, 1)]); });
+    var ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = [{ wch: 28 }, { wch: 16 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 12 }, { wch: 12 }];
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, E ? 'Summary' : 'สรุป');
+    XLSX.writeFile(wb, 'Amcharge_' + safeName() + '.xlsx');
+    $('dlMsg').textContent = I18N.t('dl_ok');
+  }
+  function snapshot() {
+    if (!roofs.length) { $('dlMsg').textContent = I18N.t('dl_none'); return; }
+    if (!window.html2canvas) { $('dlMsg').textContent = I18N.t('snap_fail'); return; }
+    $('dlMsg').textContent = I18N.t('snap_wait');
+    html2canvas(map.getContainer(), { useCORS: true, allowTaint: false, logging: false, backgroundColor: null }).then(function (canvas) {
+      canvas.toBlob(function (blob) {
+        if (!blob) { $('dlMsg').textContent = I18N.t('snap_fail'); return; }
+        var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Amcharge_' + safeName() + '.png';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 1500);
+        $('dlMsg').textContent = I18N.t('snap_ok');
+      });
+    }).catch(function () { $('dlMsg').textContent = I18N.t('snap_fail'); });
+  }
   function updateResults(agg, per) {
     var tilts = per.map(function (p) { return p.tilt; });
     var sameTilt = tilts.every(function (t) { return Math.abs(t - tilts[0]) < 0.01; });
@@ -576,6 +645,8 @@
     $('btnAddRoof').addEventListener('click', addRoofFlow);
     $('modalClose').addEventListener('click', closeSummary);
     $('modalEdit').addEventListener('click', closeSummary);
+    $('btnDownload').addEventListener('click', exportExcel);
+    $('btnSnapshot').addEventListener('click', snapshot);
     $('summaryModal').addEventListener('click', function (e) { if (e.target === $('summaryModal')) closeSummary(); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && summaryOpen) closeSummary(); });
     Array.prototype.forEach.call(document.querySelectorAll('.acc-head'), function (h) {
