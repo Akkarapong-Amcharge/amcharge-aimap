@@ -157,6 +157,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .metric .k { font-size: 11px; color: var(--ink-soft); }
 .metric .v { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .metric .u { font-size: 11px; color: var(--ink-soft); font-weight: 500; }
+.metric-formula { font-size: 10px; color: var(--ink-soft); margin-top: 4px; line-height: 1.35; font-variant-numeric: tabular-nums; }
 .metric.hero { grid-column: 1 / -1; background: var(--accent-soft); }
 .metric.hero .v { color: var(--accent-dark); }
 

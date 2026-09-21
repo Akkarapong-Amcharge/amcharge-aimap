@@ -445,19 +445,19 @@
     aoa.push([E ? 'True area (m2)' : 'พื้นที่จริง (ตร.ม.)', round(agg.trueA, 0)]);
     aoa.push([E ? 'Projected area (m2)' : 'พื้นที่เงา (ตร.ม.)', round(agg.projected, 0)]);
     aoa.push([E ? 'Usable ratio (%)' : 'สัดส่วนพื้นที่ที่ใช้ได้ (%)', round(agg.coverage * 100, 0)]);
-    aoa.push([E ? 'Total weight (t)' : 'น้ำหนักรวม (ตัน)', round(agg.weight / 1000, 1)]);
+    aoa.push([E ? 'Total weight (ton)' : 'น้ำหนักรวม (ตัน)', round(agg.weight / 1000, 1)]);
     aoa.push([E ? 'Avg roof load (kg/m2)' : 'โหลดเฉลี่ยหลังคา (กก./ตร.ม.)', round(agg.load, 1)]);
     aoa.push([E ? 'Roofs' : 'จำนวนหลังคา', roofs.length]);
     aoa.push([]);
     aoa.push([E ? 'PER-ROOF BREAKDOWN' : 'แยกรายหลัง']);
-    aoa.push([E ? 'Roof' : 'หลังคา', E ? 'Area (m2)' : 'พื้นที่ (ตร.ม.)', E ? 'Module' : 'รุ่นแผง', E ? 'Tilt (deg)' : 'ความชัน (°)', E ? 'Facing (deg)' : 'ทิศ (°)', E ? 'Panels' : 'แผง', 'kWp', E ? 'Weight (t)' : 'น้ำหนัก (ตัน)', E ? 'Walkways' : 'ทางเดิน', E ? 'Obstacles' : 'สิ่งกีดขวาง']);
+    aoa.push([E ? 'Roof' : 'หลังคา', E ? 'Area (m2)' : 'พื้นที่ (ตร.ม.)', E ? 'Module' : 'รุ่นแผง', E ? 'Tilt (deg)' : 'ความชัน (°)', E ? 'Facing (deg)' : 'ทิศ (°)', E ? 'Panels' : 'แผง', 'kWp', E ? 'Weight (ton)' : 'น้ำหนัก (ตัน)', E ? 'Walkways' : 'ทางเดิน', E ? 'Obstacles' : 'สิ่งกีดขวาง']);
     per.forEach(function (pp) {
       var rf = roofs[pp.idx];
       aoa.push([(E ? 'R' : 'ล') + (pp.idx + 1), round(pp.res.trueAreaSqm, 0), MODULES[rf.module].label, (rf.tiltUnknown ? '?' : rf.tilt), rf.az, pp.res.panelCount, round(pp.res.dcCapacityKwp, 1), round(pp.res.totalWeightKg / 1000, 2), rf.walkways.length, rf.obstacles.length]);
     });
     aoa.push([]);
     aoa.push([E ? 'COMPARE PV (whole site)' : 'เปรียบเทียบ PV (ทั้งไซต์)']);
-    aoa.push([E ? 'Model' : 'รุ่น', E ? 'Panels' : 'แผง', 'kWp', E ? 'Weight (t)' : 'น้ำหนัก (ตัน)', 'kg/m2']);
+    aoa.push([E ? 'Model' : 'รุ่น', E ? 'Panels' : 'แผง', 'kWp', E ? 'Weight (ton)' : 'น้ำหนัก (ตัน)', 'kg/m2']);
     var cmp = MODULE_ORDER.map(function (k) { return { k: k, a: computeAll(k).agg }; });
     var bestKwp = Math.max.apply(null, cmp.map(function (c) { return c.a.kwp; }));
     cmp.forEach(function (c) {

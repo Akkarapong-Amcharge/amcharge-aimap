@@ -65,6 +65,7 @@ window.I18N = (function () {
       s5_title: '5 · ผลการคำนวณ',
       m_kwp: 'กำลังติดตั้ง DC', m_count: 'จำนวนแผง', m_true: 'พื้นที่จริง', m_proj: 'พื้นที่เงา (projected)',
       m_tilt: 'ความชันที่ใช้', m_coverage: 'สัดส่วนพื้นที่ที่ใช้ได้', m_weight: 'น้ำหนักแผงรวม', m_load: 'โหลดเฉลี่ยหลังคา',
+      m_coverage_f: '= พื้นที่แผงรวม ÷ พื้นที่หลังคาจริง × 100 (หลังหักร่น/ช่องว่าง/ทางเดิน/สิ่งกีดขวาง)',
       u_panels: 'แผง', u_sqm: 'ตร.ม.', u_ton: 'ตัน', u_kgm2: 'กก./ตร.ม.',
 
       s6_title: '6 · เปรียบเทียบ PV (ทั้งไซต์)',
@@ -154,10 +155,11 @@ window.I18N = (function () {
       s5_title: '5 · Results',
       m_kwp: 'Installed DC', m_count: 'Panel count', m_true: 'True area', m_proj: 'Projected area',
       m_tilt: 'Tilt used', m_coverage: 'Usable area ratio', m_weight: 'Total panel weight', m_load: 'Avg roof load',
-      u_panels: 'panels', u_sqm: 'm²', u_ton: 't', u_kgm2: 'kg/m²',
+      m_coverage_f: '= total panel area ÷ true roof area × 100 (after setback/gaps/walkway/obstacle)',
+      u_panels: 'panels', u_sqm: 'm²', u_ton: 'ton', u_kgm2: 'kg/m²',
 
       s6_title: '6 · Compare PV (whole site)',
-      th_model: 'Model', th_panels: 'Panels', th_ton: 't', th_kgm2: 'kg/m²',
+      th_model: 'Model', th_panels: 'Panels', th_ton: 'ton', th_kgm2: 'kg/m²',
       s6_hint: '★ = highest total capacity if every roof used the same model (applied across all roofs) · all numbers from the engine',
 
       compass_cap: 'Facing',
