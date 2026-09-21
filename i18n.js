@@ -8,8 +8,15 @@ window.I18N = (function () {
       btn_search: 'ค้นหา',
       lang_other: 'EN',
 
+      rb_label: 'หลังคาที่กำลังทำ', rb_none: 'ยังไม่มีหลังคา',
+      btn_addroof: '＋ เพิ่มหลังคา', s1_or: 'หรือหลังคารูปทรงไม่เหลี่ยม:',
+      s_summary_title: 'สรุปโครงการ — ทั้งไซต์',
+      sum_roofs: function (n) { return n + ' หลังคา'; },
+      sum_wk: function (n) { return n ? (n + ' ทางเดิน') : '—'; },
+      sum_ob: function (n) { return n ? (n + ' สิ่งกีดขวาง') : '—'; },
+
       s1_title: '1 · กำหนดหลังคา',
-      s1_hint: 'ทำทีละหลังจนครบหัวข้อ 2-4 แล้วกด “＋” เพิ่มหลังต่อไป · คลิกชิป ล1 เพื่อสลับหลังที่กำลังทำ (หัวข้อ 2-4 ผูกกับหลังนี้) · ✕ ลบ',
+      s1_hint: 'ทำทีละหลังจนครบหัวข้อ 2-4 แล้วกด “＋ เพิ่มหลังคา” ด้านล่างเพื่อเพิ่มหลังต่อไป · คลิกชิป ล1 ด้านบนเพื่อสลับหลังที่กำลังทำ (หัวข้อ 2-4 ผูกกับหลังนี้)',
       s1_add_title: 'เพิ่มหลังคา',
       f_width: 'กว้าง (ม.)', f_length: 'ยาว (ม.)', btn_rect: '＋ ปักขนาด',
       s1_rect_hint: 'วางที่กลางแผนที่ ตามทิศ — จากแบบ as-built ไม่ต้อง digitize ภาพ',
@@ -49,7 +56,7 @@ window.I18N = (function () {
       s4_hint: 'วางวงกลมทับสิ่งที่อยู่บนหลังคา เช่น Air Inlet, คูลลิ่งทาวเวอร์, ปล่องระบาย — engine จะเว้นแผงบริเวณนั้น',
       f_ob_radius: 'รัศมี (ม.)', btn_ob_add: '＋ วางสิ่งกีดขวาง',
       s4_list_hint: 'กดปุ่มแล้ว “คลิกตำแหน่ง” บนแผนที่ 1 ครั้ง = วาง 1 วง · คลิกชิป อ1 เพื่อดู/แก้รัศมี · ✕ ลบ',
-      btn_confirm: '✓ เสร็จสิ้น (Complete) — สรุปทั้งไซต์', btn_edit: '✏️ แก้ไขแผน',
+      btn_confirm: '✓ สรุปโครงการ', btn_edit: '✏️ กลับไปแก้',
 
       s5_title: '5 · ผลการคำนวณ',
       m_kwp: 'กำลังติดตั้ง DC', m_count: 'จำนวนแผง', m_true: 'พื้นที่จริง', m_proj: 'พื้นที่เงา (projected)',
@@ -86,8 +93,15 @@ window.I18N = (function () {
       btn_search: 'Search',
       lang_other: 'ไทย',
 
+      rb_label: 'Active roof', rb_none: 'No roofs yet',
+      btn_addroof: '＋ Add roof', s1_or: 'Or irregular shape:',
+      s_summary_title: 'Project summary — whole site',
+      sum_roofs: function (n) { return n + ' roofs'; },
+      sum_wk: function (n) { return n ? (n + ' walkways') : '—'; },
+      sum_ob: function (n) { return n ? (n + ' obstacles') : '—'; },
+
       s1_title: '1 · Define Roof',
-      s1_hint: 'Finish steps 2-4 for one roof, then press “＋” for the next · click chip R1 to switch the active roof (steps 2-4 bind to it) · ✕ delete',
+      s1_hint: 'Finish steps 2-4 for one roof, then press “＋ Add roof” below for the next · click chip R1 above to switch the active roof (steps 2-4 bind to it)',
       s1_add_title: 'Add roof',
       f_width: 'Width (m)', f_length: 'Length (m)', btn_rect: '＋ Place size',
       s1_rect_hint: 'Placed at map center along facing — from as-built drawings, no image digitizing',
@@ -127,7 +141,7 @@ window.I18N = (function () {
       s4_hint: 'Place a circle over rooftop items — air inlet, cooling tower, vent stack — the engine skips panels there',
       f_ob_radius: 'Radius (m)', btn_ob_add: '＋ Place obstacle',
       s4_list_hint: 'Press the button then “click a spot” on the map once = one circle · click chip O1 to view/edit radius · ✕ delete',
-      btn_confirm: '✓ Complete — site summary', btn_edit: '✏️ Edit plan',
+      btn_confirm: '✓ Project summary', btn_edit: '✏️ Back to edit',
 
       s5_title: '5 · Results',
       m_kwp: 'Installed DC', m_count: 'Panel count', m_true: 'True area', m_proj: 'Projected area',

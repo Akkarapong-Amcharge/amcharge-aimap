@@ -50,7 +50,7 @@
   var roofs = [];          // แต่ละหลัง: { ring, module, roofType, tilt, tiltUnknown, az, setback, rowGap, colGap, orientation, walkwayWidth, walkwayEvery, walkways:[], obstacles:[] }
   var active = -1;         // หลังคาที่กำลังทำ (sections 2-4 ผูกกับหลังนี้)
   var selectedWk = -1, selectedOb = -1;
-  var confirmed = false;
+  var summaryOpen = false;
   var lastAgg = null, lastPer = null;
 
   var $ = function (id) { return document.getElementById(id); };
@@ -71,7 +71,7 @@
     var enabled = !!rf;
     // เปิด/ปิดพารามิเตอร์เมื่อไม่มีหลังคาที่ทำอยู่
     ['module', 'roofType', 'tilt', 'tiltUnknown', 'azimuth', 'setback', 'rowGap', 'colGap', 'orientation', 'walkwayWidth', 'walkwayEvery', 'btnCompute', 'btnWalkway', 'btnClearWalkway', 'btnObstacle', 'btnClearObstacle', 'obstacleRadius', 'drawWalkwayWidth'].forEach(function (id) {
-      var el = $(id); if (el && !confirmed) el.disabled = !enabled;
+      var el = $(id); if (el) el.disabled = !enabled;
     });
     if (rf) {
       $('module').value = rf.module; $('roofType').value = rf.roofType;
@@ -84,7 +84,7 @@
     updateAzLabel();
     selectedWk = -1; selectedOb = -1;
     updateWalkwayList(); updateObstacleList();
-    updateActiveTags();
+    updateRoofBar(); updateAccSummaries();
   }
   function syncActiveFromUI() {
     var rf = aRoof(); if (!rf) return;
@@ -99,9 +99,32 @@
     rf.walkwayWidth = parseFloat($('walkwayWidth').value) || 0;
     rf.walkwayEvery = parseInt($('walkwayEvery').value, 10) || 0;
   }
-  function updateActiveTags() {
-    var txt = (active >= 0) ? (I18N.t('editing') + ' ' + I18N.t('roof_prefix') + (active + 1)) : I18N.t('no_active');
-    Array.prototype.forEach.call(document.querySelectorAll('[data-active]'), function (el) { el.textContent = txt; });
+  function updateRoofBar() {
+    var el = $('activeRoofName'); if (!el) return;
+    el.textContent = (active >= 0) ? (I18N.t('roof_prefix') + (active + 1)) : I18N.t('rb_none');
+    el.classList.toggle('none', active < 0);
+  }
+  function updateAccSummaries() {
+    var rf = aRoof();
+    if ($('sum1')) $('sum1').textContent = roofs.length ? I18N.t('sum_roofs', roofs.length) : '';
+    if (!$('sum2')) return;
+    if (rf) {
+      var m = MODULES[rf.module];
+      var tiltTxt = rf.tiltUnknown ? '—' : (rf.tilt + '°');
+      $('sum2').textContent = m.short + ' · ' + tiltTxt + ' · ' + I18N.t('lbl_facing') + ' ' + rf.az + '°';
+      $('sum3').textContent = I18N.t('sum_wk', rf.walkways.length);
+      $('sum4').textContent = I18N.t('sum_ob', rf.obstacles.length);
+    } else { $('sum2').textContent = ''; $('sum3').textContent = ''; $('sum4').textContent = ''; }
+  }
+  // accordion
+  function openAcc(n) {
+    Array.prototype.forEach.call(document.querySelectorAll('.acc'), function (s) {
+      s.classList.toggle('open', s.getAttribute('data-acc') === String(n));
+    });
+  }
+  function toggleAcc(n) {
+    var s = document.querySelector('.acc[data-acc="' + n + '"]');
+    if (s.classList.contains('open')) s.classList.remove('open'); else openAcc(n);
   }
 
   // ---------- drawing (add roof) ----------
@@ -171,7 +194,7 @@
     roofs.push(newRoofFrom(points.map(function (p) { return [p.lat, p.lng]; })));
     active = roofs.length - 1;
     drawLayer.clearLayers(); renderRoofs(); updateRoofList(); loadActiveToUI();
-    endDrawUI(); setStatus(''); runCompute();
+    endDrawUI(); setStatus(''); runCompute(); openAcc(2);
   }
   function makeRect() {
     var w = parseFloat($('roofW').value), len = parseFloat($('roofL').value);
@@ -183,15 +206,15 @@
     roofs.push(newRoofFrom(ring)); active = roofs.length - 1;
     drawLayer.clearLayers(); renderRoofs(); updateRoofList(); loadActiveToUI();
     endDrawUI();
-    setStatus(en() ? ('Added roof ' + w + '×' + len + ' m — press Place size for another') : ('เพิ่มหลังคา ' + w + '×' + len + ' ม. — กดปักขนาดเพิ่มหลังต่อไปได้'));
-    runCompute();
+    setStatus(en() ? ('Added roof ' + w + '×' + len + ' m — set its parameters below') : ('เพิ่มหลังคา ' + w + '×' + len + ' ม. — ตั้งค่าพารามิเตอร์ด้านล่างต่อได้เลย'));
+    runCompute(); openAcc(2);
   }
   function clearAll() {
     drawing = false; placingObstacle = false; points = []; roofs = []; active = -1; selectedWk = -1; selectedOb = -1;
     map.doubleClickZoom.enable();
     drawLayer.clearLayers(); roofLayer.clearLayers(); panelLayer.clearLayers(); walkwayLayer.clearLayers(); obstacleLayer.clearLayers();
-    clearResults(); updateRoofList(); loadActiveToUI();
-    endDrawUI(); setStatus(en() ? 'Search your site, then add a roof (＋)' : 'ค้นหาไซต์ แล้วเพิ่มหลังคา (＋)');
+    closeSummary(); updateRoofList(); loadActiveToUI();
+    endDrawUI(); openAcc(1); setStatus(en() ? 'Search your site, then add a roof (＋)' : 'ค้นหาไซต์ แล้วเพิ่มหลังคา (＋)');
   }
 
   // ---------- roofs (list / map / select / delete) ----------
@@ -281,7 +304,7 @@
       }
     }
     renderWalkwayDetail();
-    if ($('btnClearWalkway')) $('btnClearWalkway').disabled = confirmed || !arr.length;
+    if ($('btnClearWalkway')) $('btnClearWalkway').disabled = !arr.length;
   }
   function renderWalkwayDetail() {
     var host = $('wkDetail'); if (!host) return; var rf = aRoof();
@@ -327,7 +350,7 @@
       }
     }
     renderObstacleDetail();
-    if ($('btnClearObstacle')) $('btnClearObstacle').disabled = confirmed || !arr.length;
+    if ($('btnClearObstacle')) $('btnClearObstacle').disabled = !arr.length;
   }
   function renderObstacleDetail() {
     var host = $('obDetail'); if (!host) return; var rf = aRoof();
@@ -366,21 +389,29 @@
     return { agg: agg, per: per, panels: allPanels };
   }
   function runCompute() {
-    if (!roofs.length) { panelLayer.clearLayers(); clearResults(); return; }
+    updateAccSummaries();
+    if (!roofs.length) { panelLayer.clearLayers(); closeSummary(); return; }
     var out = computeAll();
     lastAgg = out.agg; lastPer = out.per;
     drawPanels(out.panels);
-    if (confirmed) updateResults(out.agg, out.per); else clearResults();
+    if (summaryOpen) updateResults(out.agg, out.per);
   }
   function drawPanels(panels) {
     panelLayer.clearLayers();
     for (var i = 0; i < panels.length; i++) L.polygon(panels[i], { color: '#1d4ed8', weight: 0.6, fillColor: '#3b82f6', fillOpacity: 0.7 }).addTo(panelLayer);
   }
 
-  // ---------- results ----------
-  function clearResults() { $('results').hidden = true; $('cmpCard').hidden = true; }
+  // ---------- results / summary modal ----------
+  function openSummary() {
+    if (!roofs.length) { if ($('confirmMsg')) $('confirmMsg').textContent = I18N.t('confirm_none'); return; }
+    if ($('confirmMsg')) $('confirmMsg').textContent = '';
+    var out = computeAll(); lastAgg = out.agg; lastPer = out.per;
+    drawPanels(out.panels);
+    updateResults(out.agg, out.per);
+    summaryOpen = true; $('summaryModal').classList.add('open');
+  }
+  function closeSummary() { summaryOpen = false; if ($('summaryModal')) $('summaryModal').classList.remove('open'); }
   function updateResults(agg, per) {
-    $('results').hidden = false;
     var tilts = per.map(function (p) { return p.tilt; });
     var sameTilt = tilts.every(function (t) { return Math.abs(t - tilts[0]) < 0.01; });
     $('resProjected').textContent = fmt(agg.projected);
@@ -415,7 +446,7 @@
     if (agg.warnings && agg.warnings.length) { w.hidden = false; w.innerHTML = '<b>' + T('warn_title') + '</b><ul>' + agg.warnings.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>'; }
     else { w.hidden = true; w.innerHTML = ''; }
 
-    $('cmpCard').hidden = false; renderCompare();
+    renderCompare();
   }
   function addBadge(parent, text, good) { var s = document.createElement('span'); s.className = 'badge' + (good ? ' good' : ''); s.textContent = text; parent.appendChild(s); }
 
@@ -481,31 +512,13 @@
     }).join('');
   }
 
-  // ---------- confirm / edit (Complete) ----------
-  var LOCK_IDS = ['btnDraw', 'btnFinish', 'btnClear', 'btnRect', 'roofW', 'roofL',
-    'module', 'roofType', 'tilt', 'tiltUnknown', 'azimuth', 'setback', 'rowGap', 'colGap', 'orientation', 'walkwayWidth', 'walkwayEvery', 'btnCompute',
-    'drawWalkwayWidth', 'btnWalkway', 'btnWalkwayDone', 'btnWalkwayCancel', 'btnClearWalkway', 'obstacleRadius', 'btnObstacle', 'btnClearObstacle'];
-  function lockUI(locked) {
-    LOCK_IDS.forEach(function (id) { var el = $(id); if (el) el.disabled = locked; });
-    ['roofList', 'roofDetail', 'walkwayList', 'wkDetail', 'obstacleList', 'obDetail'].forEach(function (id) {
-      var host = $(id); if (host) Array.prototype.forEach.call(host.querySelectorAll('button,input,select'), function (el) { el.disabled = locked; });
-    });
-  }
-  function confirmPlan() {
-    if (!roofs.length) { if ($('confirmMsg')) $('confirmMsg').textContent = I18N.t('confirm_none'); return; }
-    var out = computeAll(); lastAgg = out.agg; lastPer = out.per;
-    confirmed = true;
-    updateResults(out.agg, out.per);
-    lockUI(true);
-    var b = $('btnConfirm'); b.classList.remove('btn-pending'); b.classList.add('btn-confirmed'); b.textContent = I18N.t('btn_confirmed');
-    $('btnEdit').hidden = false;
-    if ($('confirmMsg')) $('confirmMsg').innerHTML = I18N.t('confirm_locked2', roofs.length, fmt(out.agg.count), fmt(out.agg.kwp, 1));
-  }
-  function editPlan() {
-    confirmed = false; clearResults(); lockUI(false);
-    var b = $('btnConfirm'); b.classList.remove('btn-confirmed'); b.classList.add('btn-pending'); b.textContent = I18N.t('btn_confirm');
-    $('btnEdit').hidden = true; if ($('confirmMsg')) $('confirmMsg').textContent = '';
-    loadActiveToUI(); endDrawUI(); updateRoofList();
+  // ---------- add-roof shortcut ----------
+  function addRoofFlow() {
+    openAcc(1);
+    var s1 = document.querySelector('.acc[data-acc="1"]');
+    if (s1 && s1.scrollIntoView) s1.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    var rw = $('roofW'); if (rw) { rw.focus(); rw.select && rw.select(); }
+    setStatus(en() ? 'Set width/length then “＋ Place size”, or “✏️ Draw” for an irregular roof' : 'ใส่กว้าง/ยาว แล้ว “＋ ปักขนาด” หรือ “✏️ วาดเอง” สำหรับรูปทรงไม่เหลี่ยม');
   }
 
   // ---------- search ----------
@@ -532,12 +545,12 @@
   function updateLangSeg() { var seg = $('langSeg'); if (!seg) return; Array.prototype.forEach.call(seg.querySelectorAll('button'), function (b) { b.classList.toggle('active', b.getAttribute('data-lang') === I18N.getLang()); }); }
   function refreshLang() {
     I18N.applyStatic(); updateLangSeg();
-    var b = $('btnConfirm'); b.textContent = confirmed ? I18N.t('btn_confirmed') : I18N.t('btn_confirm');
     if (compassCap) compassCap.textContent = I18N.t('compass_cap');
-    updateAzLabel(); updateRoofList(); updateWalkwayList(); updateObstacleList(); updateActiveTags();
+    updateAzLabel(); updateRoofList(); updateWalkwayList(); updateObstacleList();
+    updateRoofBar(); updateAccSummaries();
     renderRoofs(); renderWalkways(); renderObstacles();
-    if (confirmed && lastAgg) updateResults(lastAgg, lastPer);
-    else if (!confirmed) $('confirmMsg').textContent = '';
+    if (summaryOpen && lastAgg) updateResults(lastAgg, lastPer);
+    if (!roofs.length && $('confirmMsg')) $('confirmMsg').textContent = '';
   }
 
   // ---------- init ----------
@@ -559,8 +572,15 @@
     $('btnClearWalkway').addEventListener('click', clearWalkways);
     $('btnObstacle').addEventListener('click', startPlaceObstacle);
     $('btnClearObstacle').addEventListener('click', clearObstacles);
-    $('btnConfirm').addEventListener('click', confirmPlan);
-    $('btnEdit').addEventListener('click', editPlan);
+    $('btnConfirm').addEventListener('click', openSummary);
+    $('btnAddRoof').addEventListener('click', addRoofFlow);
+    $('modalClose').addEventListener('click', closeSummary);
+    $('modalEdit').addEventListener('click', closeSummary);
+    $('summaryModal').addEventListener('click', function (e) { if (e.target === $('summaryModal')) closeSummary(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && summaryOpen) closeSummary(); });
+    Array.prototype.forEach.call(document.querySelectorAll('.acc-head'), function (h) {
+      h.addEventListener('click', function () { toggleAcc(h.parentNode.getAttribute('data-acc')); });
+    });
     $('btnCompute').addEventListener('click', function () { syncActiveFromUI(); runCompute(); });
     $('searchBtn').addEventListener('click', search);
     $('search').addEventListener('keydown', function (e) { if (e.key === 'Enter') search(); });
@@ -579,8 +599,8 @@
     $('btnFinish').disabled = true;
     buildCompareChecks();
     I18N.applyStatic(); updateLangSeg();
-    $('btnConfirm').textContent = I18N.t('btn_confirm');
-    updateRoofList(); loadActiveToUI();     // เริ่มว่าง (ปุ่ม params ปิดจนกว่าจะเพิ่มหลังคา)
+    openAcc(1);                              // เริ่มเปิดหัวข้อ 1
+    updateRoofList(); loadActiveToUI();      // เริ่มว่าง (ปุ่ม params ปิดจนกว่าจะเพิ่มหลังคา)
     setStatus(en() ? 'Search your site, then add a roof (＋)' : 'ค้นหาไซต์ แล้วเพิ่มหลังคา (＋)');
   }
 

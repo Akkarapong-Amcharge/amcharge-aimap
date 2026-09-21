@@ -38,210 +38,254 @@
     <div id="map"></div>
 
     <aside>
-      <div class="card">
-        <h3 data-i18n="s1_title">1 · กำหนดหลังคา</h3>
-        <p class="hint" style="margin:0 0 8px" data-i18n="s1_hint">เพิ่มได้หลายหลัง (＋) — คลิกชิป ล1 เพื่อเลือก/ตั้งทิศรายหลัง · ✕ ลบ</p>
+      <!-- แถบหลังคาที่กำลังทำ (ติดบนสุดตลอด) -->
+      <div id="roofBar" class="roof-bar">
+        <div class="rb-top">
+          <span class="rb-label" data-i18n="rb_label">หลังคาที่กำลังทำ</span>
+          <span id="activeRoofName" class="rb-active">—</span>
+        </div>
         <div id="roofList" class="wk-list"></div>
         <div id="roofDetail" class="detail-box" hidden></div>
-
-        <div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px">
-          <p class="sub-title" data-i18n="s1_add_title">เพิ่มหลังคา</p>
-          <div class="row" style="align-items:flex-end">
-            <label class="field"><span data-i18n="f_width">กว้าง (ม.)</span><input id="roofW" type="number" value="45" min="1" step="0.5"></label>
-            <label class="field"><span data-i18n="f_length">ยาว (ม.)</span><input id="roofL" type="number" value="90" min="1" step="0.5"></label>
-            <button id="btnRect" class="primary" style="white-space:nowrap" data-i18n="btn_rect">＋ ปักขนาด</button>
-          </div>
-          <p class="hint" style="margin:6px 0 0" data-i18n="s1_rect_hint">วางที่กลางแผนที่ ตามทิศ — จากแบบ as-built ไม่ต้อง digitize ภาพ</p>
-
-          <div class="btns" style="margin-top:10px">
-            <button id="btnDraw" data-i18n="btn_draw">＋ วาดหลังคา</button>
-            <button id="btnFinish" data-i18n="btn_finish">✓ เสร็จ</button>
-            <button id="btnClear" class="ghost" data-i18n="btn_clear">ล้างทั้งหมด</button>
-          </div>
-          <p id="status" class="hint" style="margin:8px 0 0"></p>
-        </div>
       </div>
 
-      <div class="card">
-        <h3 data-i18n="s2_title">2 · พารามิเตอร์</h3><span class="active-tag" data-active></span>
-        <div class="row">
-          <label class="field"><span data-i18n="f_module">แผง / Segment</span>
-            <select id="module">
-              <option value="lr8-620">Hi-MO 7 LR8-66HGD-620M · 620W (1.134×2.382 · 33.5kg)</option>
-              <option value="lr7-505">Hi-MO X10 LR7-54HVH-505M · 505W (1.134×1.800 · 21.6kg)</option>
-              <option value="lr7-560">Hi-MO X10 LR7-60HVH-560M · 560W (1.134×1.990 · 25.3kg)</option>
-              <option value="lr5-585">Hi-MO 6 LR5-72HTH-585M · 585W (1.134×2.278 · 27.5kg)</option>
-              <option value="lr7-640">Hi-MO 9 LR7-72HYD-640M · 640W (1.134×2.382 · 33.5kg)</option>
-            </select>
-          </label>
-        </div>
-        <div class="row">
-          <label class="field"><span data-i18n="f_rooftype">ชนิดหลังคา</span>
-            <select id="roofType">
-              <option value="metal" data-i18n="rt_metal">เมทัลชีท (โรงงาน) ~5–15°</option>
-              <option value="flat" data-i18n="rt_flat">ดาดฟ้าเรียบ ~0–3°</option>
-              <option value="tile" data-i18n="rt_tile">กระเบื้อง (บ้าน) ~25–35°</option>
-            </select>
-          </label>
-        </div>
-        <p class="hint" style="margin:2px 0 0" data-i18n="s2_rt_hint">เลือกชนิดหลังคาแล้วระบบตั้ง “ความชัน” ให้อัตโนมัติ — ปรับเองได้</p>
-        <div class="row">
-          <label class="field"><span data-i18n="f_tilt">ความชันหลังคา (°)</span>
-            <input id="tilt" type="number" value="7" min="0" max="60" step="0.5">
-          </label>
-          <label class="field"><span data-i18n="f_azimuth">ทิศที่แผงหันไป (azimuth)</span>
-            <input id="azimuth" type="range" min="0" max="360" step="5" value="180">
-            <span id="azVal" class="hint">180° · ใต้ (S)</span>
-          </label>
-        </div>
-        <label class="checkbox" style="margin-top:6px"><input id="tiltUnknown" type="checkbox"> <span data-i18n="chk_tiltunknown">ไม่ทราบความชัน (จะใช้ 0° + เตือน — G-05)</span></label>
-        <p class="hint" style="margin:6px 0 0" data-i18n="s2_compass_hint">🧭 ไทยอยู่ซีกโลกเหนือ แผงควรหันทิศใต้ (~180°) · หมุนแผนที่: Shift+ลากเมาส์ หรือสองนิ้ว · คลิกเข็มทิศเพื่อรีเซ็ตทิศเหนือ</p>
+      <!-- Accordion หัวข้อ 1-4 -->
+      <div class="acc-wrap">
 
-        <div class="row" style="margin-top:10px">
-          <label class="field"><span data-i18n="f_setback">ระยะร่นขอบ setback (ม.)</span>
-            <input id="setback" type="number" value="1.0" min="0" step="0.1">
-          </label>
-          <label class="field"><span data-i18n="f_rowgap">ช่องว่างแถว (ม.)</span>
-            <input id="rowGap" type="number" value="0.05" min="0" step="0.01">
-          </label>
-        </div>
-        <div class="row">
-          <label class="field"><span data-i18n="f_colgap">ช่องว่างคอลัมน์ (ม.)</span>
-            <input id="colGap" type="number" value="0.02" min="0" step="0.01">
-          </label>
-          <label class="field"><span data-i18n="f_orient">การวางแผง</span>
-            <select id="orientation">
-              <option value="portrait" data-i18n="or_portrait">แนวตั้ง (portrait)</option>
-              <option value="landscape" data-i18n="or_landscape">แนวนอน (landscape)</option>
-            </select>
-          </label>
-        </div>
-        <div class="btns" style="margin-top:10px">
-          <button id="btnCompute" class="primary" data-i18n="btn_compute">คำนวณใหม่</button>
-        </div>
-        <p class="src-note" style="margin:8px 0 0" data-i18n="s2_demo_hint">ค่าเริ่มต้นเป็นค่าสาธิต — ค่าจริง (fire code walkway / setback) รอวิศวกรอาวุโสตาม O-05</p>
-      </div>
-
-      <div class="card">
-        <h3 data-i18n="s3_title">3 · ทางเดิน (Walkway)</h3><span class="active-tag" data-active></span>
-        <p class="hint" style="margin:0 0 10px" data-i18n="s3_hint">ทำหลังตั้งค่า PV/พารามิเตอร์ในหัวข้อ 2 แล้ว — ถ้าย้อนไปแก้พารามิเตอร์ ควรตรวจอีกครั้ง</p>
-
-        <p class="sub-title" data-i18n="s3_auto_title">ทางเดินอัตโนมัติ (เว้นเป็นแถว)</p>
-        <div class="row">
-          <label class="field"><span data-i18n="f_ww_width">ความกว้าง (ม.)</span>
-            <input id="walkwayWidth" type="number" value="0" min="0" step="0.1">
-          </label>
-          <label class="field"><span data-i18n="f_ww_every">เว้นทุกๆ (แถว)</span>
-            <input id="walkwayEvery" type="number" value="6" min="0" step="1">
-          </label>
-        </div>
-        <p class="hint" style="margin:4px 0 0" data-i18n="s3_auto_hint">ความกว้าง 0 = ปิด (ใช้แบบวาดเองด้านล่างแทน)</p>
-
-        <div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px">
-          <p class="sub-title" data-i18n="s3_draw_title">ทางเดินวาดเอง (วาดได้ไม่จำกัดเส้น)</p>
-
-          <div id="wkIdle">
+        <section class="acc" data-acc="1">
+          <button class="acc-head" type="button">
+            <span class="acc-no">1</span>
+            <span class="acc-title" data-i18n="s1_title">กำหนดหลังคา</span>
+            <span class="acc-sum" id="sum1"></span>
+            <span class="acc-chev" aria-hidden="true">▾</span>
+          </button>
+          <div class="acc-body">
+            <p class="hint" style="margin:0 0 10px" data-i18n="s1_hint">ทำทีละหลังจนครบหัวข้อ 2-4 แล้วกด “＋ เพิ่มหลังคา” เพิ่มหลังต่อไป · คลิกชิป ล1 ด้านบนเพื่อสลับหลัง</p>
             <div class="row" style="align-items:flex-end">
-              <label class="field"><span data-i18n="f_dww">ความกว้าง (ม.)</span>
-                <input id="drawWalkwayWidth" type="number" value="1.2" min="0.3" step="0.1">
-              </label>
-              <button id="btnWalkway" class="primary" style="white-space:nowrap" data-i18n="btn_wk_add">＋ เพิ่มทางเดิน</button>
-              <button id="btnClearWalkway" class="ghost" data-i18n="btn_clear_all">ล้างทั้งหมด</button>
+              <label class="field"><span data-i18n="f_width">กว้าง (ม.)</span><input id="roofW" type="number" value="45" min="1" step="0.5"></label>
+              <label class="field"><span data-i18n="f_length">ยาว (ม.)</span><input id="roofL" type="number" value="90" min="1" step="0.5"></label>
+              <button id="btnRect" class="primary" style="white-space:nowrap" data-i18n="btn_rect">＋ ปักขนาด</button>
             </div>
+            <p class="hint" style="margin:6px 0 0" data-i18n="s1_rect_hint">วางที่กลางแผนที่ ตามทิศ — จากแบบ as-built ไม่ต้อง digitize ภาพ</p>
+            <div class="draw-inline">
+              <span class="hint" data-i18n="s1_or">หรือหลังคารูปทรงไม่เหลี่ยม:</span>
+              <button id="btnDraw" class="ghost sm" data-i18n="btn_draw">✏️ วาดเอง</button>
+              <button id="btnFinish" class="primary sm" data-i18n="btn_finish">✓ เสร็จ</button>
+            </div>
+            <p id="status" class="hint" style="margin:8px 0 0"></p>
+            <button id="btnClear" class="link-btn" data-i18n="btn_clear">🗑 ล้างทั้งหมด</button>
           </div>
+        </section>
 
-          <div id="wkDrawing" hidden>
+        <section class="acc" data-acc="2">
+          <button class="acc-head" type="button">
+            <span class="acc-no">2</span>
+            <span class="acc-title" data-i18n="s2_title">พารามิเตอร์</span>
+            <span class="acc-sum" id="sum2"></span>
+            <span class="acc-chev" aria-hidden="true">▾</span>
+          </button>
+          <div class="acc-body">
             <div class="row">
-              <button id="btnWalkwayDone" class="primary" style="flex:1" data-i18n="btn_wk_done">✓ เสร็จเส้นนี้</button>
-              <button id="btnWalkwayCancel" class="ghost" data-i18n="btn_wk_cancel">ยกเลิก</button>
+              <label class="field"><span data-i18n="f_module">แผง / Segment</span>
+                <select id="module">
+                  <option value="lr8-620">Hi-MO 7 LR8-66HGD-620M · 620W (1.134×2.382 · 33.5kg)</option>
+                  <option value="lr7-505">Hi-MO X10 LR7-54HVH-505M · 505W (1.134×1.800 · 21.6kg)</option>
+                  <option value="lr7-560">Hi-MO X10 LR7-60HVH-560M · 560W (1.134×1.990 · 25.3kg)</option>
+                  <option value="lr5-585">Hi-MO 6 LR5-72HTH-585M · 585W (1.134×2.278 · 27.5kg)</option>
+                  <option value="lr7-640">Hi-MO 9 LR7-72HYD-640M · 640W (1.134×2.382 · 33.5kg)</option>
+                </select>
+              </label>
             </div>
-            <p class="hint" style="margin:6px 0 0" data-i18n="s3_drawing_hint">คลิกแนวทางเดินบนแผนที่ (≥ 2 จุด) แล้วกด “✓ เสร็จเส้นนี้”</p>
+            <div class="row">
+              <label class="field"><span data-i18n="f_rooftype">ชนิดหลังคา</span>
+                <select id="roofType">
+                  <option value="metal" data-i18n="rt_metal">เมทัลชีท (โรงงาน) ~5–15°</option>
+                  <option value="flat" data-i18n="rt_flat">ดาดฟ้าเรียบ ~0–3°</option>
+                  <option value="tile" data-i18n="rt_tile">กระเบื้อง (บ้าน) ~25–35°</option>
+                </select>
+              </label>
+            </div>
+            <p class="hint" style="margin:2px 0 0" data-i18n="s2_rt_hint">เลือกชนิดหลังคาแล้วระบบตั้ง “ความชัน” ให้อัตโนมัติ — ปรับเองได้</p>
+            <div class="row">
+              <label class="field"><span data-i18n="f_tilt">ความชันหลังคา (°)</span>
+                <input id="tilt" type="number" value="7" min="0" max="60" step="0.5">
+              </label>
+              <label class="field"><span data-i18n="f_azimuth">ทิศที่แผงหันไป (azimuth)</span>
+                <input id="azimuth" type="range" min="0" max="360" step="5" value="180">
+                <span id="azVal" class="hint">180° · ใต้ (S)</span>
+              </label>
+            </div>
+            <label class="checkbox" style="margin-top:6px"><input id="tiltUnknown" type="checkbox"> <span data-i18n="chk_tiltunknown">ไม่ทราบความชัน (จะใช้ 0° + เตือน — G-05)</span></label>
+            <p class="hint" style="margin:6px 0 0" data-i18n="s2_compass_hint">🧭 ไทยอยู่ซีกโลกเหนือ แผงควรหันทิศใต้ (~180°) · หมุนแผนที่: Shift+ลากเมาส์ หรือสองนิ้ว · คลิกเข็มทิศเพื่อรีเซ็ตทิศเหนือ</p>
+            <div class="row" style="margin-top:10px">
+              <label class="field"><span data-i18n="f_setback">ระยะร่นขอบ setback (ม.)</span>
+                <input id="setback" type="number" value="1.0" min="0" step="0.1">
+              </label>
+              <label class="field"><span data-i18n="f_rowgap">ช่องว่างแถว (ม.)</span>
+                <input id="rowGap" type="number" value="0.05" min="0" step="0.01">
+              </label>
+            </div>
+            <div class="row">
+              <label class="field"><span data-i18n="f_colgap">ช่องว่างคอลัมน์ (ม.)</span>
+                <input id="colGap" type="number" value="0.02" min="0" step="0.01">
+              </label>
+              <label class="field"><span data-i18n="f_orient">การวางแผง</span>
+                <select id="orientation">
+                  <option value="portrait" data-i18n="or_portrait">แนวตั้ง (portrait)</option>
+                  <option value="landscape" data-i18n="or_landscape">แนวนอน (landscape)</option>
+                </select>
+              </label>
+            </div>
+            <div class="btns" style="margin-top:10px">
+              <button id="btnCompute" class="primary" data-i18n="btn_compute">คำนวณใหม่</button>
+            </div>
+            <p class="src-note" style="margin:8px 0 0" data-i18n="s2_demo_hint">ค่าเริ่มต้นเป็นค่าสาธิต — ค่าจริง (fire code walkway / setback) รอวิศวกรอาวุโสตาม O-05</p>
           </div>
+        </section>
 
-          <div id="walkwayList" class="wk-list"></div>
-          <div id="wkDetail" class="detail-box" hidden></div>
-          <p class="hint" style="margin:6px 0 0" data-i18n="s3_list_hint">แต่ละเส้นจบด้วย “✓ เสร็จเส้นนี้” · กด “＋ เพิ่มทางเดิน” วาดเส้นต่อไป · คลิกชิป ท1 เพื่อดู/แก้ความกว้าง · ✕ ลบ</p>
-        </div>
+        <section class="acc" data-acc="3">
+          <button class="acc-head" type="button">
+            <span class="acc-no">3</span>
+            <span class="acc-title" data-i18n="s3_title">ทางเดิน (Walkway)</span>
+            <span class="acc-sum" id="sum3"></span>
+            <span class="acc-chev" aria-hidden="true">▾</span>
+          </button>
+          <div class="acc-body">
+            <p class="hint" style="margin:0 0 10px" data-i18n="s3_hint">ทำหลังตั้งค่า PV/พารามิเตอร์ในหัวข้อ 2 แล้ว — ถ้าย้อนไปแก้พารามิเตอร์ ควรตรวจอีกครั้ง</p>
+            <p class="sub-title" data-i18n="s3_auto_title">ทางเดินอัตโนมัติ (เว้นเป็นแถว)</p>
+            <div class="row">
+              <label class="field"><span data-i18n="f_ww_width">ความกว้าง (ม.)</span>
+                <input id="walkwayWidth" type="number" value="0" min="0" step="0.1">
+              </label>
+              <label class="field"><span data-i18n="f_ww_every">เว้นทุกๆ (แถว)</span>
+                <input id="walkwayEvery" type="number" value="6" min="0" step="1">
+              </label>
+            </div>
+            <p class="hint" style="margin:4px 0 0" data-i18n="s3_auto_hint">ความกว้าง 0 = ปิด (ใช้แบบวาดเองด้านล่างแทน)</p>
+            <div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px">
+              <p class="sub-title" data-i18n="s3_draw_title">ทางเดินวาดเอง (วาดได้ไม่จำกัดเส้น)</p>
+              <div id="wkIdle">
+                <div class="row" style="align-items:flex-end">
+                  <label class="field"><span data-i18n="f_dww">ความกว้าง (ม.)</span>
+                    <input id="drawWalkwayWidth" type="number" value="1.2" min="0.3" step="0.1">
+                  </label>
+                  <button id="btnWalkway" class="primary" style="white-space:nowrap" data-i18n="btn_wk_add">＋ เพิ่มทางเดิน</button>
+                  <button id="btnClearWalkway" class="ghost" data-i18n="btn_clear_all">ล้างทั้งหมด</button>
+                </div>
+              </div>
+              <div id="wkDrawing" hidden>
+                <div class="row">
+                  <button id="btnWalkwayDone" class="primary" style="flex:1" data-i18n="btn_wk_done">✓ เสร็จเส้นนี้</button>
+                  <button id="btnWalkwayCancel" class="ghost" data-i18n="btn_wk_cancel">ยกเลิก</button>
+                </div>
+                <p class="hint" style="margin:6px 0 0" data-i18n="s3_drawing_hint">คลิกแนวทางเดินบนแผนที่ (≥ 2 จุด) แล้วกด “✓ เสร็จเส้นนี้”</p>
+              </div>
+              <div id="walkwayList" class="wk-list"></div>
+              <div id="wkDetail" class="detail-box" hidden></div>
+              <p class="hint" style="margin:6px 0 0" data-i18n="s3_list_hint">แต่ละเส้นจบด้วย “✓ เสร็จเส้นนี้” · กด “＋ เพิ่มทางเดิน” วาดเส้นต่อไป · คลิกชิป ท1 เพื่อดู/แก้ความกว้าง · ✕ ลบ</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="acc" data-acc="4">
+          <button class="acc-head" type="button">
+            <span class="acc-no">4</span>
+            <span class="acc-title" data-i18n="s4_title">สิ่งกีดขวาง (Obstacle)</span>
+            <span class="acc-sum" id="sum4"></span>
+            <span class="acc-chev" aria-hidden="true">▾</span>
+          </button>
+          <div class="acc-body">
+            <p class="hint" style="margin:0 0 10px" data-i18n="s4_hint">วางวงกลมทับสิ่งที่อยู่บนหลังคา เช่น Air Inlet, คูลลิ่งทาวเวอร์, ปล่องระบาย — engine จะเว้นแผงบริเวณนั้น</p>
+            <div class="row" style="align-items:flex-end">
+              <label class="field"><span data-i18n="f_ob_radius">รัศมี (ม.)</span>
+                <input id="obstacleRadius" type="number" value="1.5" min="0.3" step="0.1">
+              </label>
+              <button id="btnObstacle" class="primary" style="white-space:nowrap" data-i18n="btn_ob_add">＋ วางสิ่งกีดขวาง</button>
+              <button id="btnClearObstacle" class="ghost" data-i18n="btn_clear_all">ล้างทั้งหมด</button>
+            </div>
+            <div id="obstacleList" class="wk-list"></div>
+            <div id="obDetail" class="detail-box" hidden></div>
+            <p class="hint" style="margin:6px 0 0" data-i18n="s4_list_hint">กดปุ่มแล้ว “คลิกตำแหน่ง” บนแผนที่ 1 ครั้ง = วาง 1 วง · คลิกชิป อ1 เพื่อดู/แก้รัศมี · ✕ ลบ</p>
+          </div>
+        </section>
       </div>
 
-      <div class="card">
-        <h3 data-i18n="s4_title">4 · สิ่งกีดขวาง (Obstacle)</h3><span class="active-tag" data-active></span>
-        <p class="hint" style="margin:0 0 10px" data-i18n="s4_hint">วางวงกลมทับสิ่งที่อยู่บนหลังคา เช่น Air Inlet, คูลลิ่งทาวเวอร์, ปล่องระบาย — engine จะเว้นแผงบริเวณนั้น</p>
-        <div class="row" style="align-items:flex-end">
-          <label class="field"><span data-i18n="f_ob_radius">รัศมี (ม.)</span>
-            <input id="obstacleRadius" type="number" value="1.5" min="0.3" step="0.1">
-          </label>
-          <button id="btnObstacle" class="primary" style="white-space:nowrap" data-i18n="btn_ob_add">＋ วางสิ่งกีดขวาง</button>
-          <button id="btnClearObstacle" class="ghost" data-i18n="btn_clear_all">ล้างทั้งหมด</button>
-        </div>
-        <div id="obstacleList" class="wk-list"></div>
-        <div id="obDetail" class="detail-box" hidden></div>
-        <p class="hint" style="margin:6px 0 0" data-i18n="s4_list_hint">กดปุ่มแล้ว “คลิกตำแหน่ง” บนแผนที่ 1 ครั้ง = วาง 1 วง · คลิกชิป อ1 เพื่อดู/แก้รัศมี · ✕ ลบ</p>
-
-        <div class="btns" style="margin-top:14px;border-top:1px solid var(--line);padding-top:14px;flex-direction:column;gap:8px">
-          <button id="btnConfirm" class="btn-pending" style="width:100%">✓ ยืนยันแผนเสร็จสมบูรณ์</button>
-          <button id="btnEdit" class="ghost" style="width:100%" hidden data-i18n="btn_edit">✏️ แก้ไขแผน</button>
-        </div>
-        <p id="confirmMsg" class="hint" style="margin:8px 0 0"></p>
+      <!-- ปุ่มหลักล่างสุด (ติดตลอด) -->
+      <div class="action-bar">
+        <button id="btnAddRoof" class="big-btn add" data-i18n="btn_addroof">＋ เพิ่มหลังคา</button>
+        <button id="btnConfirm" class="big-btn done" data-i18n="btn_confirm">✓ สรุปโครงการ</button>
       </div>
-
-      <div id="results" class="card" hidden>
-        <h3 data-i18n="s5_title">5 · ผลการคำนวณ</h3>
-        <div class="metrics">
-          <div class="metric hero">
-            <div class="k" data-i18n="m_kwp">กำลังติดตั้ง DC</div>
-            <div><span class="v" id="resKwp">0</span> <span class="u">kWp</span></div>
-          </div>
-          <div class="metric">
-            <div class="k" data-i18n="m_count">จำนวนแผง</div>
-            <div><span class="v" id="resCount">0</span> <span class="u" data-i18n="u_panels">แผง</span></div>
-          </div>
-          <div class="metric">
-            <div class="k" data-i18n="m_true">พื้นที่จริง</div>
-            <div><span class="v" id="resTrue">0</span> <span class="u" data-i18n="u_sqm">ตร.ม.</span></div>
-          </div>
-          <div class="metric">
-            <div class="k" data-i18n="m_proj">พื้นที่เงา (projected)</div>
-            <div><span class="v" id="resProjected">0</span> <span class="u" data-i18n="u_sqm">ตร.ม.</span></div>
-          </div>
-          <div class="metric">
-            <div class="k" data-i18n="m_tilt">ความชันที่ใช้</div>
-            <div><span class="v" id="resTilt">0°</span></div>
-          </div>
-          <div class="metric">
-            <div class="k" data-i18n="m_coverage">สัดส่วนพื้นที่ที่ใช้ได้</div>
-            <div><span class="v" id="resCoverage">0%</span></div>
-          </div>
-          <div class="metric">
-            <div class="k" data-i18n="m_weight">น้ำหนักแผงรวม</div>
-            <div><span class="v" id="resWeight">0</span> <span class="u" data-i18n="u_ton">ตัน</span></div>
-          </div>
-          <div class="metric">
-            <div class="k" data-i18n="m_load">โหลดเฉลี่ยหลังคา</div>
-            <div><span class="v" id="resLoad">0</span> <span class="u" data-i18n="u_kgm2">กก./ตร.ม.</span></div>
-          </div>
-        </div>
-        <div id="resBreakdown" class="breakdown" hidden></div>
-        <div id="badges" class="badges"></div>
-        <div id="warnings" class="warn-box" hidden></div>
-      </div>
-
-      <div id="cmpCard" class="card" hidden>
-        <h3 data-i18n="s6_title">6 · เปรียบเทียบ PV (หลังคาเดียวกัน)</h3>
-        <div id="cmpChecks" class="checks"></div>
-        <div style="overflow-x:auto;margin-top:10px">
-          <table class="cmp">
-            <thead><tr>
-              <th data-i18n="th_model">รุ่น</th><th data-i18n="th_panels">แผง</th><th>kWp</th>
-              <th data-i18n="th_ton">ตัน</th><th data-i18n="th_kgm2">กก./ม²</th>
-            </tr></thead>
-            <tbody id="cmpBody"></tbody>
-          </table>
-        </div>
-        <p class="hint" style="margin:8px 0 0" data-i18n="s6_hint">★ = กำลังติดตั้งสูงสุดบนหลังคานี้ (ใช้ ความชัน/ทิศ/setback ชุดเดียวกัน) · ตัวเลขจาก engine ทั้งหมด</p>
-      </div>
+      <p id="confirmMsg" class="hint" style="margin:0 2px"></p>
     </aside>
   </main>
+
+  <!-- หน้าต่างสรุปโครงการ -->
+  <div id="summaryModal" class="modal-bg">
+    <div class="modal modal-lg">
+      <div class="modal-head">
+        <h3 data-i18n="s_summary_title">สรุปโครงการ — ทั้งไซต์</h3>
+        <button id="modalClose" class="modal-x" aria-label="close">✕</button>
+      </div>
+      <div class="modal-scroll">
+        <div id="results">
+          <div class="metrics">
+            <div class="metric hero">
+              <div class="k" data-i18n="m_kwp">กำลังติดตั้ง DC</div>
+              <div><span class="v" id="resKwp">0</span> <span class="u">kWp</span></div>
+            </div>
+            <div class="metric">
+              <div class="k" data-i18n="m_count">จำนวนแผง</div>
+              <div><span class="v" id="resCount">0</span> <span class="u" data-i18n="u_panels">แผง</span></div>
+            </div>
+            <div class="metric">
+              <div class="k" data-i18n="m_true">พื้นที่จริง</div>
+              <div><span class="v" id="resTrue">0</span> <span class="u" data-i18n="u_sqm">ตร.ม.</span></div>
+            </div>
+            <div class="metric">
+              <div class="k" data-i18n="m_proj">พื้นที่เงา (projected)</div>
+              <div><span class="v" id="resProjected">0</span> <span class="u" data-i18n="u_sqm">ตร.ม.</span></div>
+            </div>
+            <div class="metric">
+              <div class="k" data-i18n="m_tilt">ความชันที่ใช้</div>
+              <div><span class="v" id="resTilt">0°</span></div>
+            </div>
+            <div class="metric">
+              <div class="k" data-i18n="m_coverage">สัดส่วนพื้นที่ที่ใช้ได้</div>
+              <div><span class="v" id="resCoverage">0%</span></div>
+            </div>
+            <div class="metric">
+              <div class="k" data-i18n="m_weight">น้ำหนักแผงรวม</div>
+              <div><span class="v" id="resWeight">0</span> <span class="u" data-i18n="u_ton">ตัน</span></div>
+            </div>
+            <div class="metric">
+              <div class="k" data-i18n="m_load">โหลดเฉลี่ยหลังคา</div>
+              <div><span class="v" id="resLoad">0</span> <span class="u" data-i18n="u_kgm2">กก./ตร.ม.</span></div>
+            </div>
+          </div>
+          <div id="resBreakdown" class="breakdown" hidden></div>
+          <div id="badges" class="badges"></div>
+          <div id="warnings" class="warn-box" hidden></div>
+        </div>
+
+        <div id="cmpCard" style="margin-top:16px">
+          <h4 class="cmp-title" data-i18n="s6_title">เปรียบเทียบ PV (ทั้งไซต์)</h4>
+          <div id="cmpChecks" class="checks"></div>
+          <div style="overflow-x:auto;margin-top:10px">
+            <table class="cmp">
+              <thead><tr>
+                <th data-i18n="th_model">รุ่น</th><th data-i18n="th_panels">แผง</th><th>kWp</th>
+                <th data-i18n="th_ton">ตัน</th><th data-i18n="th_kgm2">กก./ม²</th>
+              </tr></thead>
+              <tbody id="cmpBody"></tbody>
+            </table>
+          </div>
+          <p class="hint" style="margin:8px 0 0" data-i18n="s6_hint">★ = กำลังติดตั้งรวมสูงสุด ถ้าใช้รุ่นเดียวกันทุกหลังคา · ตัวเลขจาก engine ทั้งหมด</p>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button id="modalEdit" class="ghost" data-i18n="btn_edit">✏️ กลับไปแก้</button>
+      </div>
+    </div>
+  </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/leaflet-rotate@0.2.8/dist/leaflet-rotate.js"></script>
