@@ -40,21 +40,26 @@
     <aside>
       <div class="card">
         <h3 data-i18n="s1_title">1 · กำหนดหลังคา</h3>
-        <p class="hint" style="margin:0 0 8px" data-i18n="s1_hint">เลือกได้ 2 วิธี — ปักขนาดจากแบบ (แม่นสุดสำหรับ C&I) หรือวาดบนแผนที่</p>
+        <p class="hint" style="margin:0 0 8px" data-i18n="s1_hint">เพิ่มได้หลายหลัง (＋) — คลิกชิป ล1 เพื่อเลือก/ตั้งทิศรายหลัง · ✕ ลบ</p>
+        <div id="roofList" class="wk-list"></div>
+        <div id="roofDetail" class="detail-box" hidden></div>
 
-        <div class="row" style="align-items:flex-end">
-          <label class="field"><span data-i18n="f_width">กว้าง (ม.)</span><input id="roofW" type="number" value="45" min="1" step="0.5"></label>
-          <label class="field"><span data-i18n="f_length">ยาว (ม.)</span><input id="roofL" type="number" value="90" min="1" step="0.5"></label>
-          <button id="btnRect" class="primary" style="white-space:nowrap" data-i18n="btn_rect">ปักขนาด →</button>
-        </div>
-        <p class="hint" style="margin:6px 0 0" data-i18n="s1_rect_hint">วางที่กลางแผนที่ ตามทิศ (azimuth) — จากแบบ as-built ไม่ต้อง digitize ภาพ</p>
+        <div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px">
+          <p class="sub-title" data-i18n="s1_add_title">เพิ่มหลังคา</p>
+          <div class="row" style="align-items:flex-end">
+            <label class="field"><span data-i18n="f_width">กว้าง (ม.)</span><input id="roofW" type="number" value="45" min="1" step="0.5"></label>
+            <label class="field"><span data-i18n="f_length">ยาว (ม.)</span><input id="roofL" type="number" value="90" min="1" step="0.5"></label>
+            <button id="btnRect" class="primary" style="white-space:nowrap" data-i18n="btn_rect">＋ ปักขนาด</button>
+          </div>
+          <p class="hint" style="margin:6px 0 0" data-i18n="s1_rect_hint">วางที่กลางแผนที่ ตามทิศ — จากแบบ as-built ไม่ต้อง digitize ภาพ</p>
 
-        <div class="btns" style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px">
-          <button id="btnDraw" data-i18n="btn_draw">เริ่มวาดหลังคา</button>
-          <button id="btnFinish" data-i18n="btn_finish">✓ เสร็จ</button>
-          <button id="btnClear" class="ghost" data-i18n="btn_clear">ล้าง</button>
+          <div class="btns" style="margin-top:10px">
+            <button id="btnDraw" data-i18n="btn_draw">＋ วาดหลังคา</button>
+            <button id="btnFinish" data-i18n="btn_finish">✓ เสร็จ</button>
+            <button id="btnClear" class="ghost" data-i18n="btn_clear">ล้างทั้งหมด</button>
+          </div>
+          <p id="status" class="hint" style="margin:8px 0 0"></p>
         </div>
-        <p id="status" class="hint" style="margin:8px 0 0"></p>
       </div>
 
       <div class="card">
@@ -216,6 +221,7 @@
             <div><span class="v" id="resLoad">0</span> <span class="u" data-i18n="u_kgm2">กก./ตร.ม.</span></div>
           </div>
         </div>
+        <div id="resBreakdown" class="breakdown" hidden></div>
         <div id="badges" class="badges"></div>
         <div id="warnings" class="warn-box" hidden></div>
       </div>

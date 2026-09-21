@@ -47,10 +47,12 @@
   var drawMode = 'roof';       // 'roof' | 'walkway'
   var placingObstacle = false; // โหมดคลิกวางสิ่งกีดขวาง
   var points = [];             // [L.LatLng]
-  var roofRing = null;         // [[lat,lng]...]
+  var roofs = [];              // [{ ring:[[lat,lng]...], az:number }, ...] หลายหลังคา
+  var selectedRoof = -1;       // หลังคาที่เลือกอยู่ (สไลเดอร์ทิศคุมหลังนี้)
   var walkways = [];           // [{ line:[[lat,lng]...], width:number }, ...]
   var obstacles = [];          // [{ lat, lng, r }, ...] สิ่งกีดขวางวงกลม
   var selectedWk = -1, selectedOb = -1; // ดัชนีที่กำลังดู detail
+  var lastAgg = null, lastPer = null;   // ผลรวม + รายหลัง
   var confirmed = false;                // ยืนยัน/ล็อกแผนแล้วหรือยัง
   var lastResult = null, lastContext = null, lastMod = null;
 
@@ -62,19 +64,19 @@
   function hideBanner() { if (banner) banner.hidden = true; }
 
   // ---------- drawing ----------
+  function currentAz() { var a = parseFloat($('azimuth').value); return isNaN(a) ? 180 : a; }
   function startDraw() {
     drawing = true; drawMode = 'roof'; points = [];
-    drawLayer.clearLayers(); roofLayer.clearLayers(); panelLayer.clearLayers(); walkwayLayer.clearLayers(); obstacleLayer.clearLayers();
-    roofRing = null; walkways = []; obstacles = []; clearResults(); updateWalkwayCount(); updateObstacleList();
+    drawLayer.clearLayers();
     map.doubleClickZoom.disable();
     map.getContainer().classList.add('drawing');
-    $('btnDraw').disabled = true; $('btnDraw').textContent = 'กำลังวาด…';
+    $('btnDraw').disabled = true; $('btnDraw').textContent = I18N.getLang() === 'en' ? 'drawing…' : 'กำลังวาด…';
     $('btnFinish').disabled = false; $('btnFinish').classList.add('primary', 'pulse');
     setStatus('');
     showBanner(I18N.t('banner_roof'));
   }
   function startWalkwayDraw() {
-    if (!roofRing) { setStatus(I18N.getLang() === 'en' ? 'Place a roof first' : 'วางหลังคาก่อน'); return; }
+    if (!roofs.length) { setStatus(I18N.getLang() === 'en' ? 'Place a roof first' : 'วางหลังคาก่อน'); return; }
     drawing = true; drawMode = 'walkway'; points = [];
     drawLayer.clearLayers();
     map.doubleClickZoom.disable();
@@ -153,9 +155,10 @@
     if (points.length < 3) { setStatus('ต้องมีอย่างน้อย 3 จุด'); showBanner('ต้องมีอย่างน้อย 3 จุด — คลิกเพิ่ม'); return; }
     drawing = false;
     map.doubleClickZoom.enable();
-    roofRing = points.map(function (p) { return [p.lat, p.lng]; });
+    roofs.push({ ring: points.map(function (p) { return [p.lat, p.lng]; }), az: currentAz() });
+    selectedRoof = roofs.length - 1;
     drawLayer.clearLayers();
-    renderRoof(roofRing);
+    renderRoofs(); updateRoofList();
     endDrawUI();
     setStatus('');
     runCompute();
@@ -221,16 +224,16 @@
     walkways.splice(i, 1);
     if (selectedWk === i) selectedWk = -1; else if (selectedWk > i) selectedWk--;
     renderWalkways(); updateWalkwayCount();
-    if (roofRing) runCompute();
+    if (roofs.length) runCompute();
   }
   function clearWalkways() {
     walkways = []; selectedWk = -1; walkwayLayer.clearLayers(); updateWalkwayCount();
-    if (roofRing) runCompute();
+    if (roofs.length) runCompute();
   }
 
   // ---------- obstacle (สิ่งกีดขวาง) วงกลม ----------
   function startPlaceObstacle() {
-    if (!roofRing) { setStatus(I18N.getLang() === 'en' ? 'Place a roof first' : 'วางหลังคาก่อน'); return; }
+    if (!roofs.length) { setStatus(I18N.getLang() === 'en' ? 'Place a roof first' : 'วางหลังคาก่อน'); return; }
     placingObstacle = true;
     map.getContainer().classList.add('drawing');
     showBanner(I18N.t('banner_ob'));
@@ -295,11 +298,11 @@
     obstacles.splice(i, 1);
     if (selectedOb === i) selectedOb = -1; else if (selectedOb > i) selectedOb--;
     renderObstacles(); updateObstacleList();
-    if (roofRing) runCompute();
+    if (roofs.length) runCompute();
   }
   function clearObstacles() {
     obstacles = []; selectedOb = -1; obstacleLayer.clearLayers(); updateObstacleList();
-    if (roofRing) runCompute();
+    if (roofs.length) runCompute();
   }
   // ---------- ยืนยัน / ล็อก / แก้ไข ----------
   var LOCK_IDS = ['btnDraw', 'btnFinish', 'btnClear', 'btnRect', 'roofW', 'roofL',
@@ -308,22 +311,21 @@
     'obstacleRadius', 'btnObstacle', 'btnClearObstacle'];
   function lockUI(locked) {
     LOCK_IDS.forEach(function (id) { var el = $(id); if (el) el.disabled = locked; });
-    ['walkwayList', 'wkDetail', 'obstacleList', 'obDetail'].forEach(function (id) {
+    ['roofList', 'roofDetail', 'walkwayList', 'wkDetail', 'obstacleList', 'obDetail'].forEach(function (id) {
       var host = $(id); if (host) Array.prototype.forEach.call(host.querySelectorAll('button,input,select'), function (el) { el.disabled = locked; });
     });
   }
   function confirmPlan() {
-    if (!lastResult) { if ($('confirmMsg')) $('confirmMsg').textContent = I18N.t('confirm_none'); return; }
+    if (!lastAgg) { if ($('confirmMsg')) $('confirmMsg').textContent = I18N.t('confirm_none'); return; }
     confirmed = true;
-    updateResults(lastResult, lastMod);           // ผลคำนวณโผล่มาเมื่อยืนยัน
+    updateResults(lastAgg, lastPer, lastMod);     // ผลคำนวณโผล่มาเมื่อยืนยัน
     lockUI(true);
     var b = $('btnConfirm');
     b.classList.remove('btn-pending'); b.classList.add('btn-confirmed');
     b.textContent = I18N.t('btn_confirmed');
     $('btnEdit').hidden = false;
-    var r = lastResult;
     if ($('confirmMsg')) {
-      $('confirmMsg').innerHTML = I18N.t('confirm_locked', fmt(r.panelCount), fmt(r.dcCapacityKwp, 1), walkways.length, obstacles.length);
+      $('confirmMsg').innerHTML = I18N.t('confirm_locked2', roofs.length, fmt(lastAgg.count), fmt(lastAgg.kwp, 1), walkways.length, obstacles.length);
     }
   }
   function editPlan() {
@@ -343,32 +345,31 @@
   function makeRect() {
     var w = parseFloat($('roofW').value), len = parseFloat($('roofL').value);
     if (!(w > 0) || !(len > 0)) { setStatus(I18N.getLang() === 'en' ? 'Enter width/length in meters' : 'กรอกความกว้าง/ยาวเป็นเมตร'); return; }
-    var az = parseFloat($('azimuth').value) || 0;
+    var az = currentAz();
     var c = map.getCenter(), lat0 = c.lat, lng0 = c.lng;
     var hw = w / 2, hl = len / 2;
     var corners = [[-hw, -hl], [hw, -hl], [hw, hl], [-hw, hl]];
     var r = az * Math.PI / 180, cs = Math.cos(r), sn = Math.sin(r);
-    roofRing = corners.map(function (p) {
+    var ring = corners.map(function (p) {
       var x = p[0] * cs - p[1] * sn, y = p[0] * sn + p[1] * cs;
       return RoofEngine._internal.toLatLng(x, y, lat0, lng0);
     });
+    roofs.push({ ring: ring, az: az }); selectedRoof = roofs.length - 1;
     drawing = false; map.doubleClickZoom.enable();
     drawLayer.clearLayers();
-    walkways = []; walkwayLayer.clearLayers(); updateWalkwayCount();
-    obstacles = []; obstacleLayer.clearLayers(); updateObstacleList();
-    renderRoof(roofRing);
+    renderRoofs(); updateRoofList();
     endDrawUI();
     setStatus(I18N.getLang() === 'en'
-      ? ('Roof ' + w + '×' + len + ' m (facing ' + az + '°) — pan the map and press Place size again to move it')
-      : ('หลังคาจากขนาด ' + w + '×' + len + ' ม. (ทิศ ' + az + '°) — เลื่อนแผนที่แล้วกดปักขนาดใหม่เพื่อย้ายตำแหน่ง'));
+      ? ('Added roof ' + w + '×' + len + ' m — pan the map and press Place size for another')
+      : ('เพิ่มหลังคา ' + w + '×' + len + ' ม. — เลื่อนแผนที่แล้วกดปักขนาดเพิ่มหลังต่อไปได้'));
     runCompute();
   }
 
   function clearAll() {
-    drawing = false; placingObstacle = false; points = []; roofRing = null; walkways = []; obstacles = [];
+    drawing = false; placingObstacle = false; points = []; roofs = []; selectedRoof = -1; walkways = []; obstacles = [];
     map.doubleClickZoom.enable();
     drawLayer.clearLayers(); roofLayer.clearLayers(); panelLayer.clearLayers(); walkwayLayer.clearLayers(); obstacleLayer.clearLayers();
-    clearResults(); updateWalkwayCount(); updateObstacleList();
+    clearResults(); updateWalkwayCount(); updateObstacleList(); updateRoofList();
     endDrawUI();
     setStatus(I18N.t('status_cleared'));
   }
@@ -390,32 +391,45 @@
     var rules = currentRules();
     var tilt = $('tiltUnknown').checked ? null : (parseFloat($('tilt').value));
     if (tilt != null && isNaN(tilt)) tilt = null;
-    var az = parseFloat($('azimuth').value) || 0;
-    return { rules: rules, tilt: tilt, az: az, walkways: walkways, obstacles: obstacles };
+    return { rules: rules, tilt: tilt, walkways: walkways, obstacles: obstacles };
+  }
+  // คำนวณทุกหลังคาด้วยรุ่นแผงที่กำหนด — คืน { agg, per, panels }
+  function computeAll(mod) {
+    var ci = currentInputs();
+    var modObj = { watt: mod.watt, width: mod.width, height: mod.height, weightKg: mod.weightKg };
+    var panelArea = mod.width * mod.height;
+    var agg = { projected: 0, trueA: 0, count: 0, kwp: 0, weight: 0, warnings: [] };
+    var per = [], allPanels = [];
+    roofs.forEach(function (rf, idx) {
+      var res = RoofEngine.computeLayout({
+        ring: rf.ring, tiltDeg: ci.tilt, azimuthDeg: rf.az,
+        module: modObj, rules: ci.rules, walkways: ci.walkways, obstacles: ci.obstacles
+      });
+      if (!res.ok) return;
+      allPanels = allPanels.concat(res.panels);
+      per.push({ idx: idx, az: rf.az, res: res });
+      agg.projected += res.projectedAreaSqm; agg.trueA += res.trueAreaSqm;
+      agg.count += res.panelCount; agg.kwp += res.dcCapacityKwp; agg.weight += res.totalWeightKg;
+      (res.warnings || []).forEach(function (w) { agg.warnings.push(I18N.t('roof_prefix') + (idx + 1) + ': ' + w); });
+    });
+    agg.load = agg.trueA > 0 ? agg.weight / agg.trueA : 0;
+    agg.coverage = agg.trueA > 0 ? (agg.count * panelArea) / agg.trueA : 0;
+    agg.tilt = ci.tilt;
+    return { agg: agg, per: per, panels: allPanels };
   }
   function runCompute() {
-    if (!roofRing || roofRing.length < 3) return;
+    if (!roofs.length) { panelLayer.clearLayers(); clearResults(); return; }
     var mod = MODULES[$('module').value];
-    var ci = currentInputs();
-    var rules = ci.rules;
-
-    var res = RoofEngine.computeLayout({
-      ring: roofRing, tiltDeg: ci.tilt, azimuthDeg: ci.az,
-      module: { watt: mod.watt, width: mod.width, height: mod.height, weightKg: mod.weightKg }, rules: rules,
-      walkways: ci.walkways, obstacles: ci.obstacles
-    });
-    if (!res.ok) { setStatus(res.error || (I18N.getLang() === 'en' ? 'Cannot calculate' : 'คำนวณไม่ได้')); return; }
-
-    lastResult = res; lastMod = mod;
+    var out = computeAll(mod);
+    lastAgg = out.agg; lastPer = out.per; lastMod = mod;
     lastContext = {
       segment: mod.segment, segmentLabel: SEG_LABEL[mod.segment],
       moduleLabel: mod.label, moduleWatt: mod.watt,
       roofType: (ROOF_TYPES[$('roofType').value] || {}).label,
-      basemap: 'Esri World Imagery', geometrySource: 'manual (วาดเอง)',
-      setback_m: rules.setback, rowGap_m: rules.rowGap, orientation: rules.orientation
+      roofCount: roofs.length, basemap: 'Esri World Imagery'
     };
-    drawPanels(res.panels);
-    if (confirmed) updateResults(res, mod); else clearResults(); // ผลโชว์เฉพาะเมื่อยืนยันแล้ว
+    drawPanels(out.panels);
+    if (confirmed) updateResults(out.agg, out.per, mod); else clearResults();
   }
   function drawPanels(panels) {
     panelLayer.clearLayers();
@@ -430,30 +444,46 @@
     $('results').hidden = true;
     $('cmpCard').hidden = true;
   }
-  function updateResults(r, mod) {
+  function updateResults(agg, per, mod) {
     $('results').hidden = false;
-    $('resProjected').textContent = fmt(r.projectedAreaSqm);
-    $('resTrue').textContent = fmt(r.trueAreaSqm);
-    $('resTilt').textContent = fmt(r.tiltDeg, 1) + '°';
-    $('resCount').textContent = fmt(r.panelCount);
-    $('resKwp').textContent = fmt(r.dcCapacityKwp, 1);
-    $('resCoverage').textContent = fmt(r.usableCoverage * 100, 0) + '%';
-    $('resWeight').textContent = fmt(r.totalWeightKg / 1000, 1);
-    $('resLoad').textContent = fmt(r.arealLoadKgPerSqm, 1);
+    var tiltUsed = (agg.tilt == null ? 0 : agg.tilt);
+    $('resProjected').textContent = fmt(agg.projected);
+    $('resTrue').textContent = fmt(agg.trueA);
+    $('resTilt').textContent = fmt(tiltUsed, 1) + '°';
+    $('resCount').textContent = fmt(agg.count);
+    $('resKwp').textContent = fmt(agg.kwp, 1);
+    $('resCoverage').textContent = fmt(agg.coverage * 100, 0) + '%';
+    $('resWeight').textContent = fmt(agg.weight / 1000, 1);
+    $('resLoad').textContent = fmt(agg.load, 1);
+
+    // breakdown รายหลัง
+    var bd = $('resBreakdown');
+    if (bd) {
+      if (per && per.length > 1) {
+        bd.hidden = false;
+        bd.innerHTML = '<div class="bd-title">' + I18N.t('breakdown_title') + '</div>' +
+          per.map(function (p) {
+            return '<div class="bd-row"><span class="bd-tag">' + I18N.t('roof_prefix') + (p.idx + 1) + '</span>' +
+              '<span>' + fmt(p.res.panelCount) + ' ' + I18N.t('u_panels') + '</span>' +
+              '<span><b>' + fmt(p.res.dcCapacityKwp, 1) + '</b> kWp</span>' +
+              '<span>' + I18N.t('lbl_facing') + ' ' + p.az + '°</span></div>';
+          }).join('');
+      } else { bd.hidden = true; bd.innerHTML = ''; }
+    }
 
     // badges
     var T = I18N.t;
     var b = $('badges'); b.innerHTML = '';
     addBadge(b, T('badge_engine'), true);
-    addBadge(b, T('badge_manual'), false);
+    addBadge(b, roofs.length + ' ' + T('badge_roofs'), false);
     addBadge(b, T('badge_img'), false);
     addBadge(b, mod.segment === 'ci' ? T('badge_ci') : T('badge_res'), false);
 
     // warnings
     var w = $('warnings');
-    if (r.warnings && r.warnings.length) {
+    if (agg.warnings && agg.warnings.length) {
       w.hidden = false;
-      w.innerHTML = '<b>' + T('warn_title') + '</b><ul>' + r.warnings.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>';
+      w.innerHTML = '<b>' + T('warn_title') + '</b><ul>' + agg.warnings.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>';
     } else { w.hidden = true; w.innerHTML = ''; }
 
     $('cmpCard').hidden = false;
@@ -487,11 +517,64 @@
       interactive: false, keyboard: false
     }).addTo(layer);
   }
-  function renderRoof(ringArr) {
+  function ringAreaSqm(ring) {
+    return polyAreaSqm(ring.map(function (p) { return { lat: p[0], lng: p[1] }; }));
+  }
+  function renderRoofs() {
     roofLayer.clearLayers();
-    var lls = ringArr.map(function (p) { return L.latLng(p[0], p[1]); });
-    L.polygon(lls, { color: '#f59e0b', weight: 2, fillColor: '#f59e0b', fillOpacity: 0.08 }).addTo(roofLayer);
-    for (var i = 0; i < lls.length; i++) edgeLabel(lls[i], lls[(i + 1) % lls.length], roofLayer);
+    roofs.forEach(function (rf, idx) {
+      var sel = (idx === selectedRoof);
+      var lls = rf.ring.map(function (p) { return L.latLng(p[0], p[1]); });
+      L.polygon(lls, { color: sel ? '#f59e0b' : '#fb923c', weight: sel ? 3 : 2, fillColor: '#f59e0b', fillOpacity: sel ? 0.10 : 0.05 }).addTo(roofLayer);
+      var cLat = 0, cLng = 0; rf.ring.forEach(function (p) { cLat += p[0]; cLng += p[1]; }); cLat /= rf.ring.length; cLng /= rf.ring.length;
+      L.marker([cLat, cLng], { icon: L.divIcon({ className: 'tag-label roof-tag' + (sel ? ' sel' : ''), html: '<span>' + I18N.t('roof_prefix') + (idx + 1) + '</span>', iconSize: [0, 0] }), interactive: false, keyboard: false }).addTo(roofLayer);
+      if (sel) for (var i = 0; i < lls.length; i++) edgeLabel(lls[i], lls[(i + 1) % lls.length], roofLayer);
+    });
+  }
+  function selectRoof(i) {
+    if (i < 0 || i >= roofs.length) return;
+    selectedRoof = i;
+    $('azimuth').value = roofs[i].az; updateAzLabel();
+    renderRoofs(); updateRoofList();
+  }
+  function deleteRoof(i) {
+    if (i < 0 || i >= roofs.length) return;
+    roofs.splice(i, 1);
+    if (selectedRoof === i) selectedRoof = roofs.length ? Math.min(i, roofs.length - 1) : -1;
+    else if (selectedRoof > i) selectedRoof--;
+    if (selectedRoof >= 0) { $('azimuth').value = roofs[selectedRoof].az; updateAzLabel(); }
+    renderRoofs(); updateRoofList(); runCompute();
+  }
+  function updateRoofList() {
+    var host = $('roofList');
+    if (host) {
+      if (!roofs.length) {
+        host.innerHTML = '<span class="hint">' + I18N.t('roof_empty') + '</span>'; selectedRoof = -1;
+      } else {
+        host.innerHTML = roofs.map(function (_, i) {
+          return '<span class="wk-item' + (i === selectedRoof ? ' sel' : '') + '">' +
+            '<button class="wk-chip roof-chip" data-i="' + i + '">' + I18N.t('roof_prefix') + (i + 1) + '</button>' +
+            '<button class="wk-del" data-i="' + i + '" title="' + I18N.t('del_roof') + '">✕</button></span>';
+        }).join('');
+        Array.prototype.forEach.call(host.querySelectorAll('.roof-chip'), function (b) {
+          b.addEventListener('click', function () { selectRoof(parseInt(b.getAttribute('data-i'), 10)); });
+        });
+        Array.prototype.forEach.call(host.querySelectorAll('.wk-del'), function (b) {
+          b.addEventListener('click', function () { deleteRoof(parseInt(b.getAttribute('data-i'), 10)); });
+        });
+      }
+    }
+    renderRoofDetail();
+    if ($('btnClearWalkway')) { /* no-op */ }
+  }
+  function renderRoofDetail() {
+    var host = $('roofDetail'); if (!host) return;
+    if (selectedRoof < 0 || selectedRoof >= roofs.length) { host.innerHTML = ''; host.hidden = true; return; }
+    var rf = roofs[selectedRoof];
+    host.hidden = false;
+    host.innerHTML = I18N.t('roof_detail', selectedRoof + 1, fmt(ringAreaSqm(rf.ring)), rf.az) +
+      ' <button id="roofDelSel" class="ghost" style="margin-left:6px">' + I18N.t('del_roof') + '</button>';
+    $('roofDelSel').addEventListener('click', function () { deleteRoof(selectedRoof); });
   }
 
   // ---------- เข็มทิศ + ทิศที่แผงหัน ----------
@@ -550,29 +633,23 @@
     });
   }
   function renderCompare() {
-    var body = $('cmpBody'); if (!body || !roofRing) return;
-    var ci = currentInputs();
+    var body = $('cmpBody'); if (!body || !roofs.length) return;
     var keys = [];
     Array.prototype.forEach.call(document.querySelectorAll('.cmp-check'), function (c) { if (c.checked) keys.push(c.value); });
     if (!keys.length) { body.innerHTML = '<tr><td colspan="5" class="hint">' + (I18N.getLang() === 'en' ? 'Select at least 1 model' : 'เลือกรุ่นอย่างน้อย 1') + '</td></tr>'; return; }
     var rows = keys.map(function (k) {
       var m = MODULES[k];
-      var res = RoofEngine.computeLayout({
-        ring: roofRing, tiltDeg: ci.tilt, azimuthDeg: ci.az,
-        module: { watt: m.watt, width: m.width, height: m.height, weightKg: m.weightKg }, rules: ci.rules,
-        walkways: ci.walkways, obstacles: ci.obstacles
-      });
-      return { m: m, res: res };
+      return { m: m, agg: computeAll(m).agg };   // รวมทุกหลังคา
     });
-    var maxKwp = Math.max.apply(null, rows.map(function (r) { return r.res.dcCapacityKwp; }));
+    var maxKwp = Math.max.apply(null, rows.map(function (r) { return r.agg.kwp; }));
     body.innerHTML = rows.map(function (r) {
-      var win = r.res.dcCapacityKwp === maxKwp;
+      var win = r.agg.kwp === maxKwp;
       return '<tr' + (win ? ' class="win"' : '') + '>' +
         '<td>' + esc(r.m.short) + (win ? ' ★' : '') + '</td>' +
-        '<td>' + fmt(r.res.panelCount) + '</td>' +
-        '<td><b>' + fmt(r.res.dcCapacityKwp, 1) + '</b></td>' +
-        '<td>' + fmt(r.res.totalWeightKg / 1000, 1) + '</td>' +
-        '<td>' + fmt(r.res.arealLoadKgPerSqm, 1) + '</td>' +
+        '<td>' + fmt(r.agg.count) + '</td>' +
+        '<td><b>' + fmt(r.agg.kwp, 1) + '</b></td>' +
+        '<td>' + fmt(r.agg.weight / 1000, 1) + '</td>' +
+        '<td>' + fmt(r.agg.load, 1) + '</td>' +
         '</tr>';
     }).join('');
   }
@@ -638,11 +715,10 @@
     updateAzLabel();
     updateWalkwayCount();
     updateObstacleList();
-    if (roofRing) renderRoof(roofRing);   // ป้ายความยาวขอบเปลี่ยนหน่วยตามภาษา
+    renderRoofs(); updateRoofList();   // ป้าย/ชิปเปลี่ยนภาษา
     renderWalkways(); renderObstacles();
-    if (confirmed && lastResult) updateResults(lastResult, lastMod);
-    else if (confirmed) { /* no result */ }
-    else { $('confirmMsg').textContent = ''; }
+    if (confirmed && lastAgg) updateResults(lastAgg, lastPer, lastMod);
+    else if (!confirmed) { $('confirmMsg').textContent = ''; }
   }
 
   // ---------- wire up ----------
@@ -686,21 +762,25 @@
       });
     });
 
-    $('module').addEventListener('change', function () { applySegmentDefaults(); if (roofRing) runCompute(); });
+    $('module').addEventListener('change', function () { applySegmentDefaults(); if (roofs.length) runCompute(); });
     $('roofType').addEventListener('change', function () {
       var t = ROOF_TYPES[$('roofType').value];
       if (t) {
         $('tiltUnknown').checked = false; $('tilt').disabled = false; $('tilt').value = t.tilt;
       }
-      if (roofRing) runCompute();
+      if (roofs.length) runCompute();
     });
-    ['tilt', 'azimuth', 'setback', 'rowGap', 'colGap', 'orientation', 'walkwayWidth', 'walkwayEvery'].forEach(function (id) {
-      $(id).addEventListener('change', function () { if (roofRing) runCompute(); });
+    ['tilt', 'setback', 'rowGap', 'colGap', 'orientation', 'walkwayWidth', 'walkwayEvery'].forEach(function (id) {
+      $(id).addEventListener('change', function () { if (roofs.length) runCompute(); });
     });
     $('azimuth').addEventListener('input', updateAzLabel);
+    $('azimuth').addEventListener('change', function () {
+      if (selectedRoof >= 0 && selectedRoof < roofs.length) { roofs[selectedRoof].az = currentAz(); renderRoofDetail(); }
+      if (roofs.length) runCompute();
+    });
     $('tiltUnknown').addEventListener('change', function () {
       $('tilt').disabled = $('tiltUnknown').checked;
-      if (roofRing) runCompute();
+      if (roofs.length) runCompute();
     });
     $('btnFinish').disabled = true;
     buildCompareChecks();
@@ -710,11 +790,14 @@
 
     // ---------- ตัวอย่างตอนเปิด (แสดงสถานะทำงานจริงทันที) ----------
     var cx = 13.421, cy = 101.104, dLat = 0.000203, dLng = 0.000415; // ~45×90 ม.
-    roofRing = [
-      [cx - dLat, cy - dLng], [cx - dLat, cy + dLng],
-      [cx + dLat, cy + dLng], [cx + dLat, cy - dLng]
-    ];
-    renderRoof(roofRing);
+    roofs = [{
+      ring: [
+        [cx - dLat, cy - dLng], [cx - dLat, cy + dLng],
+        [cx + dLat, cy + dLng], [cx + dLat, cy - dLng]
+      ], az: 180
+    }];
+    selectedRoof = 0;
+    renderRoofs(); updateRoofList();
     applySegmentDefaults();
     I18N.applyStatic();
     updateLangSeg();

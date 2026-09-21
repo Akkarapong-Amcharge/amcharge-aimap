@@ -132,6 +132,15 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .tag-label span { position: absolute; transform: translate(-50%, -50%); white-space: nowrap; font-size: 11px; font-weight: 800; padding: 1px 7px; border-radius: 6px; border: 1.5px solid #fff; }
 .wk-tag span { background: #eab308; color: #1c1917; }   /* ทางเดิน = เหลืองสด */
 .ob-tag span { background: #dc2626; color: #fff; }      /* สิ่งกีดขวาง = แดง */
+.roof-tag span { background: #ea580c; color: #fff; }    /* หลังคา = ส้ม */
+.roof-tag.sel span { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #ea580c; }
+.roof-chip { color: #c2410c !important; }
+
+/* ---- Per-roof breakdown ---- */
+.breakdown { margin-top: 10px; background: var(--panel-2); border-radius: 8px; padding: 10px 12px; }
+.bd-title { font-size: 11px; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+.bd-row { display: flex; gap: 12px; align-items: center; font-size: 12.5px; padding: 4px 0; border-top: 1px solid var(--line); }
+.bd-tag { font-weight: 800; color: #c2410c; min-width: 28px; }
 
 /* ---- Compass ---- */
 .compass { cursor: pointer; text-align: center; filter: drop-shadow(0 2px 4px rgba(0,0,0,.3)); }
