@@ -11,9 +11,10 @@
     'lr7-505': { label: 'Hi-MO X10 LR7-54HVH-505M · 505W', short: '505M', watt: 505, width: 1.134, height: 1.800, weightKg: 21.6 },
     'lr7-560': { label: 'Hi-MO X10 LR7-60HVH-560M · 560W', short: '560M', watt: 560, width: 1.134, height: 1.990, weightKg: 25.3 },
     'lr5-585': { label: 'Hi-MO 6 LR5-72HTH-585M · 585W', short: '585M', watt: 585, width: 1.134, height: 2.278, weightKg: 27.5 },
-    'lr7-640': { label: 'Hi-MO 9 LR7-72HYD-640M · 640W', short: '640M', watt: 640, width: 1.134, height: 2.382, weightKg: 33.5 }
+    'lr7-640': { label: 'Hi-MO 9 LR7-72HYD-640M · 640W', short: '640M', watt: 640, width: 1.134, height: 2.382, weightKg: 33.5 },
+    'sg-720': { label: 'Sungrow SG-66TG5B-X · 720W', short: 'SG720', watt: 720, width: 1.305, height: 2.384, weightKg: 37 }
   };
-  var MODULE_ORDER = ['lr8-620', 'lr7-505', 'lr7-560', 'lr5-585', 'lr7-640'];
+  var MODULE_ORDER = ['lr8-620', 'lr7-505', 'lr7-560', 'lr5-585', 'lr7-640', 'sg-720'];
   var ROOF_TYPES = {
     metal: { label: 'เมทัลชีท (โรงงาน)', tilt: 7 },
     flat:  { label: 'ดาดฟ้าเรียบ',       tilt: 3 },
