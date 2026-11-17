@@ -119,11 +119,11 @@
 
     var C = clim && clim.properties && clim.properties.parameter;
     var MN = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-    var target = [], useCal = !opts.monthly && !!opts.calibrate;
+    var target = [], useCal = !opts.monthly && !!opts.calibrate, cal = opts.cal || CAL;
     for (m = 0; m < 12; m++) {
       var tg = { ghi: sG[m] / 1000, dhi: sD[m] / 1000, tamb: sT[m] / (nT[m] || 1) };
       if (C) { tg.ghi = C.ALLSKY_SFC_SW_DWN[MN[m]] * DAYS[m]; tg.dhi = C.ALLSKY_SFC_SW_DIFF[MN[m]] * DAYS[m]; tg.tamb = C.T2M[MN[m]]; }
-      if (useCal) { tg.ghi *= CAL.ghi; tg.dhi *= CAL.dhi; tg.tamb += CAL.dt; }
+      if (useCal) { tg.ghi *= cal.ghi; tg.dhi *= cal.dhi; tg.tamb += cal.dt || 0; }
       if (opts.monthly && opts.monthly[m]) {
         var u = opts.monthly[m];
         if (u.ghi > 0) {
@@ -154,7 +154,9 @@
    * simulate — จำลองพลังงานรายชั่วโมงทั้งปี
    * input = {
    *   lat, lon, weather (จาก buildWeather),
-   *   orientations: [{ kwp, tilt, az, gamma (%/°C เช่น -0.26), eff (ประสิทธิภาพแผง 0-1) }],
+   *   orientations: [{ kwp, tilt, az, gamma (%/°C เช่น -0.26), eff (ประสิทธิภาพแผง 0-1),
+   *                    shade (ไม่บังคับ: Float32Array สัดส่วนเงาแดดตรงรายชั่วโมงจาก ShadingEngine) }],
+   *   (shadingPct = เงาบังเพิ่มเติมแบบคงที่ ใช้ร่วมกับ shade ได้)
    *   losses: { albedo, shadingPct, soilingPct, iamB0, uc, uv, qualityPct, mismatchPct, optimizerPct,
    *             wiringStcPct, lowLight200Pct, invEffPct, pacKw }
    * }
@@ -173,10 +175,10 @@
     var iamD = iamDiffuse(b0);
     var O = ors.map(function (o) {
       var b = o.tilt * D2R;
-      return { kwp: o.kwp, w: o.kwp / kwpTot, cb: Math.cos(b), sb: Math.sin(b), az: o.az, gamma: (o.gamma || -0.29) / 100, eff: o.eff || 0.22 };
+      return { kwp: o.kwp, w: o.kwp / kwpTot, cb: Math.cos(b), sb: Math.sin(b), az: o.az, gamma: (o.gamma || -0.29) / 100, eff: o.eff || 0.22, shade: o.shade || null };
     });
     var M = [], m;
-    for (m = 0; m < 12; m++) M.push({ ghi: 0, dhi: 0, ta: 0, n: 0, inc: 0, eff: 0, eNom: 0, e1: 0, e2: 0, e3: 0, e4: 0, e5: 0, eArr: 0, eInv: 0, eGrid: 0 });
+    for (m = 0; m < 12; m++) M.push({ ghi: 0, dhi: 0, ta: 0, n: 0, inc: 0, shd: 0, eff: 0, eNom: 0, e1: 0, e2: 0, e3: 0, e4: 0, e5: 0, eArr: 0, eInv: 0, eGrid: 0 });
 
     for (var h = 0; h < w.t.length; h++) {
       var A = M[monthOf(w.t[h], tz)];
@@ -194,11 +196,14 @@
         var pp = isoOnly ? { iso: dhi * (1 + o.cb) / 2, circ: 0, hor: 0 } : perezParts(dhi, dni, cosZ, zRad, cosT, o.cb, o.sb, sp.e0);
         var gnd = ghi * alb * (1 - o.cb) / 2;
         var poa = Math.max(0, beam + pp.iso + pp.circ + pp.hor + gnd);
-        var geff = Math.max(0, (beam + pp.circ) * iamAshrae(cosT, b0) + Math.max(0, pp.iso + pp.hor) * iamD + gnd * iamD) * (1 - sh) * (1 - so);
-        A.inc += poa * o.w; A.eff += geff * o.w;
+        var fs = o.shade ? o.shade[h] : 0;                                    // เงาแดดตรง (คำนวณ)
+        var dir = (beam + pp.circ) * (1 - fs);
+        var poaSh = Math.max(0, poa - (beam + pp.circ) * fs) * (1 - sh);       // หลังหักเงา
+        var geff = Math.max(0, dir * iamAshrae(cosT, b0) + Math.max(0, pp.iso + pp.hor) * iamD + gnd * iamD) * (1 - sh) * (1 - so);
+        A.inc += poa * o.w; A.shd += poaSh * o.w; A.eff += geff * o.w;
         var pn = o.kwp * geff / 1000;                                       // kW (= kWh ในชั่วโมงนี้)
         var p1 = geff > 0 ? pn * Math.max(0, 1 + kll * Math.log(geff / 1000)) : 0;   // แสงอ่อน
-        var tc = ta + 0.9 * poa * (1 - sh) * (1 - o.eff) / U;                  // อุณหภูมิเซลล์
+        var tc = ta + 0.9 * poaSh * (1 - o.eff) / U;                          // อุณหภูมิเซลล์
         var p2 = p1 * (1 + o.gamma * (tc - 25));
         var p3 = p2 * (1 - q), p4 = p3 * (1 - mm), p5 = p4 * (1 - op);
         A.eNom += pn; A.e1 += p1; A.e2 += p2; A.e3 += p3; A.e4 += p4; A.e5 += p5; pdc += p5;
@@ -209,7 +214,7 @@
       A.eArr += parr; A.eInv += pinv; A.eGrid += pg;
     }
 
-    var Y = { ghi: 0, dhi: 0, ta: 0, inc: 0, eff: 0, eNom: 0, e1: 0, e2: 0, e3: 0, e4: 0, e5: 0, eArr: 0, eInv: 0, eGrid: 0 };
+    var Y = { ghi: 0, dhi: 0, ta: 0, inc: 0, shd: 0, eff: 0, eNom: 0, e1: 0, e2: 0, e3: 0, e4: 0, e5: 0, eArr: 0, eInv: 0, eGrid: 0 };
     var monthly = M.map(function (a) {
       Object.keys(Y).forEach(function (k) { if (k !== 'ta') Y[k] += a[k]; });
       Y.ta += a.ta;
@@ -223,9 +228,9 @@
     var losses = [
       { key: 'ghi', kind: 'irr', value: Y.ghi / 1000 },
       { key: 'transposition', pct: ratio(Y.inc, Y.ghi) },
-      { key: 'shading', pct: -sh },
+      { key: 'shading', pct: ratio(Y.shd, Y.inc) },
       { key: 'soiling', pct: -so },
-      { key: 'iam', pct: ratio(Y.eff, Y.inc * (1 - sh) * (1 - so)) },
+      { key: 'iam', pct: ratio(Y.eff, Y.shd * (1 - so)) },
       { key: 'globEff', kind: 'irr', value: Y.eff / 1000 },
       { key: 'eNom', kind: 'energy', value: Y.eNom },
       { key: 'irradiance', pct: ratio(Y.e1, Y.eNom) },

@@ -209,12 +209,23 @@
               <label class="field"><span data-i18n="f_ob_radius">รัศมี (ม.)</span>
                 <input id="obstacleRadius" type="number" value="1.5" min="0.3" step="0.1">
               </label>
+              <label class="field"><span data-i18n="f_ob_height">สูง (ม.)</span>
+                <input id="obstacleHeight" type="number" value="1.5" min="0" step="0.1">
+              </label>
               <button id="btnObstacle" class="primary" style="white-space:nowrap" data-i18n="btn_ob_add">＋ วางสิ่งกีดขวาง</button>
               <button id="btnClearObstacle" class="ghost" data-i18n="btn_clear_all">ล้างทั้งหมด</button>
             </div>
             <div id="obstacleList" class="wk-list"></div>
             <div id="obDetail" class="detail-box" hidden></div>
             <p class="hint" style="margin:6px 0 0" data-i18n="s4_list_hint">กดปุ่มแล้ว “คลิกตำแหน่ง” บนแผนที่ 1 ครั้ง = วาง 1 วง · คลิกชิป อ1 เพื่อดู/แก้รัศมี · ✕ ลบ</p>
+            <div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px">
+              <div class="row" style="align-items:flex-end">
+                <label class="field"><span data-i18n="f_parapet">ความสูงขอบกำแพงรอบหลังคา (ม.)</span>
+                  <input id="parapetH" type="number" value="0" min="0" step="0.1">
+                </label>
+              </div>
+              <p class="hint" style="margin:4px 0 0" data-i18n="s4_shade_hint">ใช้คำนวณเงาบังในหัวข้อ 5 (ความสูงสิ่งกีดขวาง + ขอบกำแพง) · ตึกข้างเคียงที่สูง: วางวงกลมนอกหลังคาแล้วใส่ความสูง</p>
+            </div>
           </div>
         </section>
 
@@ -229,10 +240,23 @@
             <p class="hint" style="margin:0 0 10px" data-i18n="s5e_hint">จำลองรายชั่วโมงทั้งปีจากแดด/อุณหภูมิของพิกัดไซต์ (แบบเดียวกับ PVsyst) — ตั้งค่าครั้งเดียวใช้ทั้งไซต์ · ผลดูได้ใน “สรุปโครงการ”</p>
             <p class="sub-title" data-i18n="s5e_wx">ข้อมูลอากาศ</p>
             <label class="checkbox"><input type="radio" name="wxSrc" id="wxNasa" value="nasa" checked> <span data-i18n="wx_nasa">NASA POWER (ดึงอัตโนมัติตามพิกัด)</span></label>
-            <label class="checkbox" style="margin-left:22px"><input id="wxCal" type="checkbox" checked> <span data-i18n="wx_cal">ปรับเทียบให้ใกล้ Meteonorm (แดด ×0.89 · จุดอ้างอิงกรุงเทพฯ)</span></label>
+            <label class="checkbox" style="margin-left:22px"><input id="wxCal" type="checkbox" checked> <span data-i18n="wx_cal">ปรับเทียบด้วยจุดอ้างอิงที่ใกล้ไซต์ที่สุด</span></label>
             <label class="checkbox" style="margin-top:4px"><input type="radio" name="wxSrc" id="wxMonthly" value="monthly"> <span data-i18n="wx_monthly">ตารางแดดรายเดือน (คัดลอกจากรายงาน PVsyst / Meteonorm)</span></label>
             <textarea id="wxMonthlyText" class="wx-text" rows="5" data-i18n-ph="wx_monthly_ph" placeholder="วาง 12 บรรทัด: GHI  DHI  T_amb (เช่น คัดลอกตาราง Balances จาก PVsyst)"></textarea>
             <p id="wxStatus" class="hint" style="margin:4px 0 0"></p>
+            <details class="adv" id="calBox">
+              <summary><span data-i18n="cal_title">จุดปรับเทียบ</span> <span id="calCount"></span></summary>
+              <div id="calList" class="cal-list"></div>
+              <div class="btns" style="margin-top:8px">
+                <button id="calAddMonthly" class="ghost sm" data-i18n="cal_add_monthly">＋ จากตารางรายเดือนของไซต์นี้</button>
+              </div>
+              <div class="row" style="align-items:flex-end;margin-top:6px">
+                <label class="field"><span data-i18n="f_measured">ผลผลิตจริงของระบบที่วาดไว้ (MWh/ปี)</span><input id="calMeasured" type="number" min="0" step="0.1"></label>
+                <button id="calAddYield" class="ghost sm" data-i18n="cal_add_yield">＋ บันทึก</button>
+              </div>
+              <div class="btns" style="margin-top:6px"><button id="calCopy" class="link-btn" style="color:var(--accent-dark)" data-i18n="cal_copy">คัดลอก JSON ของจุดที่บันทึกในเครื่องนี้</button></div>
+              <p id="calMsg" class="hint" style="margin:4px 0 0"></p>
+            </details>
 
             <p class="sub-title" style="margin-top:12px" data-i18n="s5e_inv">อินเวอร์เตอร์</p>
             <div class="row">
@@ -242,11 +266,19 @@
             <p id="enKwac" class="hint" style="margin:4px 0 0"></p>
             <label class="checkbox" style="margin-top:6px"><input id="enOpt" type="checkbox"> <span data-i18n="chk_opt">มี optimizer (loss</span>&nbsp;<input id="enOptPct" class="mini-num" type="number" value="2.28" min="0" max="10" step="0.01">&nbsp;%)</label>
 
+            <p class="sub-title" style="margin-top:12px" data-i18n="s5e_shade">เงาบัง</p>
+            <label class="checkbox"><input id="enShadeCalc" type="checkbox" checked> <span data-i18n="chk_shadecalc">คำนวณจากความสูงสิ่งกีดขวาง + ขอบกำแพง (หัวข้อ 4)</span></label>
+            <div class="row" style="margin-top:6px">
+              <label class="field"><span data-i18n="f_shade">เงาบังเพิ่มเติม (%)</span><input id="enShade" type="number" value="0" step="0.1"></label>
+            </div>
+
+            <p class="sub-title" style="margin-top:12px" data-i18n="s5e_std">มาตรฐาน loss</p>
+            <select id="enPreset"></select>
+            <p id="enPresetNote" class="hint" style="margin:4px 0 0"></p>
             <details class="adv">
               <summary data-i18n="s5e_adv">ค่า loss ขั้นสูง (ค่าเริ่มต้นตามรายงาน PVsyst)</summary>
               <div class="adv-grid">
                 <label class="field"><span data-i18n="f_soil">ฝุ่น (%)</span><input id="enSoil" type="number" value="3.5" step="0.1"></label>
-                <label class="field"><span data-i18n="f_shade">เงาบัง (%)</span><input id="enShade" type="number" value="0.5" step="0.1"></label>
                 <label class="field"><span data-i18n="f_mm">Mismatch (%)</span><input id="enMm" type="number" value="0.5" step="0.1"></label>
                 <label class="field"><span data-i18n="f_quality">คุณภาพแผง (%)</span><input id="enQual" type="number" value="-0.75" step="0.05"></label>
                 <label class="field"><span data-i18n="f_wiring">สายไฟ DC ที่ STC (%)</span><input id="enWire" type="number" value="1.5" step="0.1"></label>
@@ -359,6 +391,8 @@
   <script src="i18n.js"></script>
   <script src="engine.js"></script>
   <script src="energy.js"></script>
+  <script src="shading.js"></script>
+  <script src="standards.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

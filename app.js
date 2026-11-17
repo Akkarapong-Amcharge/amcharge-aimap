@@ -30,7 +30,7 @@
     return {
       module: 'lr8-620', roofType: 'metal', tilt: 7, tiltUnknown: false, az: 180,
       setback: 1.0, rowGap: 0.05, colGap: 0.02, orientation: 'portrait',
-      walkwayWidth: 0, walkwayEvery: 6, ew: false
+      walkwayWidth: 0, walkwayEvery: 6, ew: false, parapet: 0
     };
   }
 
@@ -76,7 +76,7 @@
     var rf = aRoof();
     var enabled = !!rf;
     // เปิด/ปิดพารามิเตอร์เมื่อไม่มีหลังคาที่ทำอยู่
-    ['module', 'roofType', 'tilt', 'tiltUnknown', 'azimuth', 'setback', 'rowGap', 'colGap', 'orientation', 'eastWest', 'walkwayWidth', 'walkwayEvery', 'btnCompute', 'btnWalkway', 'btnClearWalkway', 'btnObstacle', 'btnClearObstacle', 'obstacleRadius', 'drawWalkwayWidth'].forEach(function (id) {
+    ['module', 'roofType', 'tilt', 'tiltUnknown', 'azimuth', 'setback', 'rowGap', 'colGap', 'orientation', 'eastWest', 'walkwayWidth', 'walkwayEvery', 'btnCompute', 'btnWalkway', 'btnClearWalkway', 'btnObstacle', 'btnClearObstacle', 'obstacleRadius', 'obstacleHeight', 'parapetH', 'drawWalkwayWidth'].forEach(function (id) {
       var el = $(id); if (el) el.disabled = !enabled;
     });
     if (rf) {
@@ -84,7 +84,7 @@
       $('tilt').value = rf.tilt; $('tiltUnknown').checked = rf.tiltUnknown; $('tilt').disabled = rf.tiltUnknown;
       $('azimuth').value = rf.az;
       $('setback').value = rf.setback; $('rowGap').value = rf.rowGap; $('colGap').value = rf.colGap;
-      $('orientation').value = rf.orientation; $('eastWest').checked = !!rf.ew;
+      $('orientation').value = rf.orientation; $('eastWest').checked = !!rf.ew; $('parapetH').value = rf.parapet || 0;
       $('walkwayWidth').value = rf.walkwayWidth; $('walkwayEvery').value = rf.walkwayEvery;
     }
     updateAzLabel();
@@ -101,7 +101,7 @@
     rf.setback = parseFloat($('setback').value) || 0;
     rf.rowGap = parseFloat($('rowGap').value) || 0;
     rf.colGap = parseFloat($('colGap').value) || 0;
-    rf.orientation = $('orientation').value; rf.ew = $('eastWest').checked;
+    rf.orientation = $('orientation').value; rf.ew = $('eastWest').checked; rf.parapet = Math.max(0, parseFloat($('parapetH').value) || 0);
     rf.walkwayWidth = parseFloat($('walkwayWidth').value) || 0;
     rf.walkwayEvery = parseInt($('walkwayEvery').value, 10) || 0;
   }
@@ -140,7 +140,7 @@
     var p = base ? {
       module: base.module, roofType: base.roofType, tilt: base.tilt, tiltUnknown: base.tiltUnknown,
       setback: base.setback, rowGap: base.rowGap, colGap: base.colGap, orientation: base.orientation,
-      walkwayWidth: base.walkwayWidth, walkwayEvery: base.walkwayEvery, ew: !!base.ew
+      walkwayWidth: base.walkwayWidth, walkwayEvery: base.walkwayEvery, ew: !!base.ew, parapet: base.parapet || 0
     } : defaultRoofParams();
     p.az = currentAz();              // ทิศ = ค่าสไลเดอร์ปัจจุบัน
     p.ring = ring; p.walkways = []; p.obstacles = [];
@@ -332,7 +332,7 @@
   function placeObstacle(latlng) {
     var rf = aRoof(); if (!rf) { placingObstacle = false; return; }
     var r = parseFloat($('obstacleRadius').value) || 1.5;
-    rf.obstacles.push({ lat: latlng.lat, lng: latlng.lng, r: r });
+    rf.obstacles.push({ lat: latlng.lat, lng: latlng.lng, r: r, h: Math.max(0, parseFloat($('obstacleHeight').value) || 0) });
     placingObstacle = false; map.getContainer().classList.remove('drawing'); hideBanner();
     renderObstacles(); updateObstacleList(); runCompute();
   }
@@ -366,8 +366,11 @@
     if (!rf || selectedOb < 0 || selectedOb >= rf.obstacles.length) { host.innerHTML = ''; host.hidden = true; return; }
     var ob = rf.obstacles[selectedOb]; host.hidden = false;
     host.innerHTML = I18N.t('ob_detail', obLabel(active, selectedOb), fmt(ob.r * 2, 1)) +
-      '<div class="row" style="align-items:flex-end;margin-top:6px"><label class="field">' + I18N.t('lbl_radius') + '<input id="obRadiusEdit" type="number" value="' + ob.r + '" min="0.3" step="0.1"></label><button id="obDelSel" class="ghost">' + I18N.t('btn_del_one') + '</button></div>';
+      '<div class="row" style="align-items:flex-end;margin-top:6px"><label class="field">' + I18N.t('lbl_radius') + '<input id="obRadiusEdit" type="number" value="' + ob.r + '" min="0.3" step="0.1"></label>' +
+      '<label class="field">' + I18N.t('f_ob_height') + '<input id="obHeightEdit" type="number" value="' + (ob.h != null ? ob.h : OB_H_DEFAULT) + '" min="0" step="0.1"></label>' +
+      '<button id="obDelSel" class="ghost">' + I18N.t('btn_del_one') + '</button></div>';
     $('obRadiusEdit').addEventListener('change', function () { var v = parseFloat($('obRadiusEdit').value); if (v > 0) { rf.obstacles[selectedOb].r = v; renderObstacles(); runCompute(); } });
+    $('obHeightEdit').addEventListener('change', function () { var v = parseFloat($('obHeightEdit').value); if (v >= 0) { rf.obstacles[selectedOb].h = v; runCompute(); } });
     $('obDelSel').addEventListener('click', function () { deleteObstacle(selectedOb); });
   }
   function deleteObstacle(i) { var rf = aRoof(); if (!rf || i < 0 || i >= rf.obstacles.length) return; rf.obstacles.splice(i, 1); if (selectedOb === i) selectedOb = -1; else if (selectedOb > i) selectedOb--; renderObstacles(); updateObstacleList(); runCompute(); }
@@ -422,9 +425,143 @@
       src: $('wxMonthly').checked ? 'monthly' : 'nasa', calibrate: $('wxCal').checked,
       dcac: Math.max(0.5, num('enDcac', 1.1)), invEff: num('enInvEff', 98.2),
       optimizer: $('enOpt').checked, optPct: num('enOptPct', 2.28),
-      soiling: num('enSoil', 3.5), shading: num('enShade', 0.5), mismatch: num('enMm', 0.5), quality: num('enQual', -0.75),
+      shadeCalc: $('enShadeCalc').checked, preset: $('enPreset').value,
+      soiling: num('enSoil', 3.5), shading: num('enShade', 0), mismatch: num('enMm', 0.5), quality: num('enQual', -0.75),
       wiring: num('enWire', 1.5), lowLight: num('enLow', 1.8), iamB0: num('enIam', 0.05), uc: num('enUc', 20), albedo: num('enAlb', 0.2)
     };
+  }
+
+  // ---- มาตรฐาน loss (จาก standards.js) ----
+  var PRESET_FIELDS = { soiling: 'enSoil', mismatch: 'enMm', quality: 'enQual', wiring: 'enWire', lowLight: 'enLow', iamB0: 'enIam', uc: 'enUc', albedo: 'enAlb' };
+  function stdPresets() { return (window.AmchargeStandards && AmchargeStandards.LOSS_PRESETS) || []; }
+  function presetById(id) { return stdPresets().filter(function (p) { return p.id === id; })[0] || null; }
+  function buildPresetSelect() {
+    var sel = $('enPreset'); if (!sel) return;
+    var cur = sel.value, L = I18N.getLang();
+    sel.innerHTML = stdPresets().map(function (p) { return '<option value="' + p.id + '">' + esc(p.label[L] || p.label.th) + '</option>'; }).join('') +
+      '<option value="custom">' + esc(I18N.t('preset_custom')) + '</option>';
+    sel.value = cur && (cur === 'custom' || presetById(cur)) ? cur : (stdPresets()[0] ? stdPresets()[0].id : 'custom');
+    updatePresetNote();
+  }
+  function applyPreset(id) {
+    var p = presetById(id); if (!p) return;
+    Object.keys(PRESET_FIELDS).forEach(function (k) { if (p.values[k] != null) $(PRESET_FIELDS[k]).value = p.values[k]; });
+    updatePresetNote();
+  }
+  function updatePresetNote() {
+    var el = $('enPresetNote'); if (!el) return;
+    var p = presetById($('enPreset').value);
+    el.textContent = p ? (I18N.t('preset_status_' + p.status) + ' · ' + p.source) : I18N.t('preset_custom_note');
+    el.className = 'hint preset-' + (p ? p.status : 'custom');
+  }
+
+  // ---- คลังจุดปรับเทียบ (standards.js + ที่บันทึกในเครื่องนี้) ----
+  var CAL_KEY = 'amc_cal_v1';
+  function localCal() { try { return JSON.parse(localStorage.getItem(CAL_KEY) || '[]'); } catch (e) { return []; } }
+  function saveLocalCal(list) { try { localStorage.setItem(CAL_KEY, JSON.stringify(list)); return true; } catch (e) { return false; } }
+  function calPoints() {
+    var b = ((window.AmchargeStandards && AmchargeStandards.CALIBRATION_POINTS) || []).map(function (p) { return Object.assign({ builtIn: true }, p); });
+    return b.concat(localCal());
+  }
+  function distKm(a, b, c, d) {
+    var R = 6371, dLat = (c - a) * Math.PI / 180, dLon = (d - b) * Math.PI / 180;
+    var s = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(a * Math.PI / 180) * Math.cos(c * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    return 2 * R * Math.asin(Math.sqrt(s));
+  }
+  function nearestCal(lat, lon) {
+    var best = null;
+    calPoints().forEach(function (p) { var km = distKm(lat, lon, p.lat, p.lon); if (!best || km < best.km) best = { p: p, km: km }; });
+    return best;
+  }
+  function calName(p) { return typeof p.name === 'string' ? p.name : (p.name[I18N.getLang()] || p.name.th); }
+  function renderCalList() {
+    var host = $('calList'); if (!host) return;
+    var c = siteCenter(), pts = calPoints(), near = nearestCal(c.lat, c.lng);
+    $('calCount').textContent = '(' + pts.length + ')';
+    host.innerHTML = pts.map(function (p, i) {
+      var km = distKm(c.lat, c.lng, p.lat, p.lon), isNear = near && near.p === p;
+      return '<div class="cal-row' + (isNear ? ' near' : '') + '"><div><b>' + esc(calName(p)) + '</b>' + (isNear ? ' <span class="badge good">' + I18N.t('cal_in_use') + '</span>' : '') +
+        '<div class="hint">' + I18N.t('cal_type_' + p.type) + ' · GHI ×' + fmt(p.ghi, 3) + ' · ' + fmt(km, 0) + ' km · ' + esc(p.source || '') + '</div></div>' +
+        (p.builtIn ? '' : '<button class="wk-del" data-i="' + (i - pts.filter(function (q) { return q.builtIn; }).length) + '" title="✕">✕</button>') + '</div>';
+    }).join('');
+    Array.prototype.forEach.call(host.querySelectorAll('.wk-del'), function (b) {
+      b.addEventListener('click', function () { var l = localCal(); l.splice(+b.getAttribute('data-i'), 1); saveLocalCal(l); renderCalList(); wxBuiltSig = ''; refreshEnergy(); });
+    });
+  }
+  function addCalPoint(pt) {
+    var l = localCal(); l.push(pt);
+    $('calMsg').textContent = saveLocalCal(l) ? I18N.t('cal_saved', calName(pt), fmt(pt.ghi, 3)) : I18N.t('cal_save_fail');
+    renderCalList(); wxBuiltSig = ''; refreshEnergy();
+  }
+  // จุดปรับเทียบจากตารางแดดรายเดือน (PVsyst/Meteonorm) ของไซต์นี้ เทียบกับ NASA climatology ที่จุดเดียวกัน
+  function addCalFromMonthly() {
+    var rows = parseMonthly($('wxMonthlyText').value);
+    if (!rows) { $('calMsg').textContent = I18N.t('en_err_monthly'); return; }
+    var c = siteCenter(), g = { lat: Math.round(c.lat * 4) / 4, lng: Math.round(c.lng * 4) / 4 };
+    loadRawWeather(g).then(function (raw) {
+      var C = raw.clim.properties.parameter, MN = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'], DM = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+      var sg = 0, sgN = 0, sd = 0, sdN = 0, st = 0, stN = 0, nt = 0;
+      rows.forEach(function (r, i) {
+        sg += r.ghi; sgN += C.ALLSKY_SFC_SW_DWN[MN[i]] * DM[i];
+        if (r.dhi > 0) { sd += r.dhi; sdN += C.ALLSKY_SFC_SW_DIFF[MN[i]] * DM[i]; }
+        if (!isNaN(r.tamb)) { st += r.tamb; stN += C.T2M[MN[i]]; nt++; }
+      });
+      var ghi = sg / sgN;
+      addCalPoint({ id: 'local-' + c.lat.toFixed(4) + '_' + c.lng.toFixed(4), name: projectName(), lat: +c.lat.toFixed(5), lon: +c.lng.toFixed(5), type: 'weather',
+        ghi: +ghi.toFixed(4), dhi: +(sdN ? sd / sdN : ghi).toFixed(4), dt: +(nt ? (st - stN) / nt : 0).toFixed(2), source: I18N.t('cal_src_monthly') });
+    }).catch(function () { $('calMsg').textContent = I18N.t('en_err_fetch'); });
+  }
+  // จุดปรับเทียบจากผลผลิตจริง: จำลองระบบที่วาดไว้ด้วย NASA ดิบ แล้วเทียบกับ MWh จริง
+  function addCalFromYield() {
+    var meas = parseFloat($('calMeasured').value);
+    if (!(meas > 0) || !roofs.length) { $('calMsg').textContent = I18N.t('cal_need_measured'); return; }
+    var cfg = readEnergyCfg(), c = siteCenter(), g = { lat: Math.round(c.lat * 4) / 4, lng: Math.round(c.lng * 4) / 4 };
+    loadRawWeather(g).then(function (raw) {
+      var opts = { lat: g.lat, lon: g.lng, tz: Math.round(g.lng / 15), calibrate: false };
+      var w = EnergyEngine.buildWeather(raw.hourly, raw.clim, opts);
+      var out = computeAll(); updateShade(out, w, cfg);
+      var sim = simulateFor(out, w, cfg), sim0 = sim;
+      if (!sim.ok || !(sim.year.eGrid > 0)) { $('calMsg').textContent = I18N.t('cal_need_measured'); return; }
+      // พลังงานไม่แปรตามแดดเป็นเส้นตรงเป๊ะ (แสงอ่อน/ความร้อน/clipping) → วนปรับตัวคูณ 3 รอบให้ผลจำลองเท่าผลจริง
+      var f = (meas * 1000) / sim.year.eGrid;
+      for (var it = 0; it < 3; it++) {
+        var wc = EnergyEngine.buildWeather(raw.hourly, raw.clim, Object.assign({}, opts, { calibrate: true, cal: { ghi: f, dhi: f, dt: 0 } }));
+        sim = simulateFor(out, wc, cfg);
+        if (sim.ok && sim.year.eGrid > 0) f *= (meas * 1000) / sim.year.eGrid;
+      }
+      sim = sim0;
+      addCalPoint({ id: 'local-y-' + c.lat.toFixed(4) + '_' + c.lng.toFixed(4), name: projectName(), lat: +c.lat.toFixed(5), lon: +c.lng.toFixed(5), type: 'yield',
+        ghi: +f.toFixed(4), dhi: +f.toFixed(4), dt: 0, source: I18N.t('cal_src_yield', fmt(meas, 1), fmt(sim.year.eGrid / 1000, 1)) });
+    }).catch(function () { $('calMsg').textContent = I18N.t('en_err_fetch'); });
+  }
+  function copyCal() {
+    var txt = JSON.stringify(localCal(), null, 2);
+    var done = function () { $('calMsg').textContent = I18N.t('cal_copied'); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, function () { window.prompt('JSON', txt); });
+    else window.prompt('JSON', txt);
+  }
+
+  // ---- เงาบังที่คำนวณจากความสูง (ShadingEngine) ต่อหลังคา ----
+  var OB_H_DEFAULT = 1.5, SHADE_SAMPLES = 160;
+  var shadeByRoof = {};   // idx -> { sig, arr }
+  function updateShade(out, w, cfg) {
+    if (!cfg.shadeCalc) return;
+    var sun = EnergyEngine._internal.sunPosition, c = siteCenter();
+    out.per.forEach(function (p) {
+      var rf = roofs[p.idx];
+      var sig = JSON.stringify([rf.ring, rf.obstacles, rf.parapet, p.res.panelCount, rf.az, w.t.length, w.shiftH, w.t[0]]);
+      if (shadeByRoof[p.idx] && shadeByRoof[p.idx].sig === sig) return;
+      var lat0 = 0, lng0 = 0; rf.ring.forEach(function (q) { lat0 += q[0]; lng0 += q[1]; }); lat0 /= rf.ring.length; lng0 /= rf.ring.length;
+      var toL = function (la, lo) { return RoofEngine._internal.toLocal(la, lo, lat0, lng0); };
+      var panels = p.res.panels, step = Math.max(1, Math.ceil(panels.length / SHADE_SAMPLES)), pts = [];
+      for (var i = 0; i < panels.length; i += step) {
+        var pl = panels[i], la = (pl[0][0] + pl[1][0] + pl[2][0] + pl[3][0]) / 4, lo = (pl[0][1] + pl[1][1] + pl[2][1] + pl[3][1]) / 4;
+        pts.push(toL(la, lo));
+      }
+      var obs = rf.obstacles.map(function (o) { var q = toL(o.lat, o.lng); return { x: q[0], y: q[1], r: o.r, h: o.h != null ? o.h : OB_H_DEFAULT }; });
+      var geom = { pts: pts, obstacles: obs, ring: rf.ring.map(function (q) { return toL(q[0], q[1]); }), parapet: rf.parapet || 0 };
+      shadeByRoof[p.idx] = { sig: sig, arr: ShadingEngine.computeShade(geom, w, c.lat, c.lng, sun) };
+    });
   }
   function siteCenter() {
     var n = 0, la = 0, lo = 0;
@@ -461,19 +598,22 @@
     var c = siteCenter(), g = { lat: Math.round(c.lat * 4) / 4, lng: Math.round(c.lng * 4) / 4 };
     var monthly = null;
     if (cfg.src === 'monthly') { monthly = parseMonthly($('wxMonthlyText').value); if (!monthly) return Promise.reject(new Error('monthly')); }
-    var sig = g.lat + '_' + g.lng + '|' + cfg.src + '|' + cfg.calibrate + '|' + (monthly ? JSON.stringify(monthly) : '');
+    var near = (!monthly && cfg.calibrate) ? nearestCal(c.lat, c.lng) : null;
+    var sig = g.lat + '_' + g.lng + '|' + cfg.src + '|' + cfg.calibrate + '|' + (near ? near.p.id + near.p.ghi : '') + '|' + (monthly ? JSON.stringify(monthly) : '');
     if (wxBuilt && wxBuiltSig === sig) return Promise.resolve(wxBuilt);
     return loadRawWeather(g).then(function (raw) {
-      var w = EnergyEngine.buildWeather(raw.hourly, raw.clim, { lat: g.lat, lon: g.lng, tz: Math.round(g.lng / 15), calibrate: cfg.calibrate, monthly: monthly });
-      wxBuilt = w; wxBuiltSig = sig;
+      var w = EnergyEngine.buildWeather(raw.hourly, raw.clim, { lat: g.lat, lon: g.lng, tz: Math.round(g.lng / 15), calibrate: cfg.calibrate, monthly: monthly,
+        cal: near ? { ghi: near.p.ghi, dhi: near.p.dhi, dt: near.p.dt } : null });
+      w.cal = near; wxBuilt = w; wxBuiltSig = sig;
       return w;
     });
   }
-  function energyOrientations(out, overrideMod) {
+  function energyOrientations(out, overrideMod, cfg) {
     var ors = [];
     out.per.forEach(function (p) {
       var rf = roofs[p.idx], m = MODULES[overrideMod || rf.module], kwp = p.res.dcCapacityKwp;
-      var base = { tilt: rf.tiltUnknown ? 0 : rf.tilt, gamma: modGamma(m), eff: modEff(m) };
+      var base = { tilt: rf.tiltUnknown ? 0 : rf.tilt, gamma: modGamma(m), eff: modEff(m),
+        shade: cfg && cfg.shadeCalc && shadeByRoof[p.idx] ? shadeByRoof[p.idx].arr : null };
       if (rf.ew) {   // East-West: แผงครึ่งหนึ่งหันทิศตรงข้าม
         ors.push(Object.assign({ kwp: kwp / 2, az: rf.az }, base));
         ors.push(Object.assign({ kwp: kwp / 2, az: (rf.az + 180) % 360 }, base));
@@ -484,7 +624,7 @@
   function simulateFor(out, w, cfg, overrideMod) {
     var c = siteCenter();
     return EnergyEngine.simulate({
-      lat: c.lat, lon: c.lng, weather: w, orientations: energyOrientations(out, overrideMod),
+      lat: c.lat, lon: c.lng, weather: w, orientations: energyOrientations(out, overrideMod, cfg),
       losses: {
         albedo: cfg.albedo, shadingPct: cfg.shading, soilingPct: cfg.soiling, iamB0: cfg.iamB0, uc: cfg.uc, uv: 0,
         qualityPct: cfg.quality, mismatchPct: cfg.mismatch, optimizerPct: cfg.optimizer ? cfg.optPct : 0,
@@ -497,22 +637,34 @@
     var cfg = readEnergyCfg(), kwp = lastAgg ? lastAgg.kwp : 0;
     el.textContent = kwp ? I18N.t('en_kwac', fmt(kwp / cfg.dcac, 1), fmt(kwp, 1)) : '';
   }
+  function calText() {
+    var n = wxBuilt && wxBuilt.cal; if (!n || energy && energy.source !== 'nasa-calibrated') return '';
+    return I18N.t('cal_using', calName(n.p), fmt(n.km, 0)) + (n.km > 250 ? ' ' + I18N.t('cal_far') : '');
+  }
   function setWxStatus() {
     var el = $('wxStatus'); if (!el) return;
     var T = I18N.t;
     el.textContent = energyState === 'loading' ? T('en_loading') : energyState === 'error' ? T(energyErr === 'monthly' ? 'en_err_monthly' : 'en_err_fetch')
-      : (energyState === 'ok' && energy ? T('en_src_' + energy.source) : '');
+      : (energyState === 'ok' && energy ? T('en_src_' + energy.source) + (calText() ? ' · ' + calText() : '') : '');
+    el.classList.toggle('warn-text', !!(wxBuilt && wxBuilt.cal && wxBuilt.cal.km > 250 && energy && energy.source === 'nasa-calibrated'));
+    renderCalList();
   }
+  var energyReq = 0;   // ใช้เฉพาะผลของคำขอล่าสุด (กันผลเก่าทับผลใหม่)
   function refreshEnergy(out) {
     updateKwacHint();
+    var my = ++energyReq;
     if (!roofs.length) { energy = null; energyState = 'idle'; renderEnergy(); return; }
     var cfg = readEnergyCfg();
     energyState = 'loading'; renderEnergy();
     getWeather(cfg).then(function (w) {
-      energy = simulateFor(out || computeAll(), w, cfg);
+      if (my !== energyReq) return;
+      out = out || computeAll();
+      updateShade(out, w, cfg);
+      energy = simulateFor(out, w, cfg);
       energyState = energy.ok ? 'ok' : 'error'; energyErr = 'sim';
       renderEnergy(); if (summaryOpen) renderCompare();
     }).catch(function (e) {
+      if (my !== energyReq) return;
       energy = null; energyState = 'error'; energyErr = (e && e.message === 'monthly') ? 'monthly' : 'fetch';
       renderEnergy();
     });
@@ -545,11 +697,22 @@
     html += '<div class="bd-title" style="margin-top:14px">' + T('en_loss_title') + '</div><div class="en-loss">' + energy.losses.map(function (l) {
       var name = T('loss_' + l.key);
       if (l.kind) return '<div class="el-row el-total"><span>' + name + '</span><b>' + (l.kind === 'irr' ? fmt(l.value, 0) + ' kWh/m²' : fmt(l.value / 1000, 2) + ' MWh') + '</b></div>';
-      var pct = l.pct * 100, cls = pct < -0.005 ? 'neg' : (pct > 0.005 ? 'pos' : 'zero');
-      return '<div class="el-row"><span>' + name + '</span><span class="el-bar"><i class="' + cls + '" style="width:' + Math.min(100, Math.abs(pct) * 9) + '%"></i></span><span class="el-pct ' + cls + '">' + (pct > 0.005 ? '+' : '') + fmt(pct, 2) + '%</span></div>';
+      var pct = l.pct * 100, cls = pct < -0.005 ? 'neg' : (pct > 0.005 ? 'pos' : 'zero'), tg = lossTag(l.key);
+      return '<div class="el-row"><span>' + name + ' <em class="tag tag-' + tg + '">' + T('tag_' + tg) + '</em></span><span class="el-bar"><i class="' + cls + '" style="width:' + Math.min(100, Math.abs(pct) * 9) + '%"></i></span><span class="el-pct ' + cls + '">' + (pct > 0.005 ? '+' : '') + fmt(pct, 2) + '%</span></div>';
     }).join('') + '</div>';
+    html += '<p class="hint" style="margin:6px 0 0">' + T('tag_legend') + '</p>';
+    var cfgN = readEnergyCfg(), pr = presetById(cfgN.preset);
+    html += '<p class="hint" style="margin:4px 0 0">' + T('en_used', pr ? (pr.label[I18N.getLang()] || pr.label.th) : T('preset_custom'),
+      cfgN.shadeCalc ? T('chk_shadecalc') : T('shade_manual')) + (calText() ? ' · ' + calText() : '') + '</p>';
     html += '<p class="src-note" style="margin:8px 0 0">' + T('en_disclaimer') + '</p>';
     body.innerHTML = html;
+  }
+  // ที่มาของแต่ละบรรทัดใน loss diagram: calc = ระบบคำนวณ · assume = สมมติฐาน (ปรับตามไซต์) · sheet = datasheet
+  function lossTag(key) {
+    if (key === 'shading') return readEnergyCfg().shadeCalc ? 'calc' : 'assume';
+    if (['transposition', 'iam', 'irradiance', 'temperature', 'clipping'].indexOf(key) >= 0) return 'calc';
+    if (key === 'inverter') return 'sheet';
+    return 'assume';
   }
 
   // ---------- results / summary modal ----------
@@ -663,8 +826,13 @@
     aoa.push([T('en_loss_title')]);
     energy.losses.forEach(function (l) {
       aoa.push(l.kind ? [T('loss_' + l.key), l.kind === 'irr' ? round(l.value, 1) : round(l.value / 1000, 2), l.kind === 'irr' ? 'kWh/m2' : 'MWh']
-        : [T('loss_' + l.key), round(l.pct * 100, 2), '%']);
+        : [T('loss_' + l.key), round(l.pct * 100, 2), '%', T('tag_' + lossTag(l.key))]);
     });
+    var pr = presetById(cfg.preset);
+    aoa.push([]);
+    aoa.push([E ? 'Loss standard' : 'มาตรฐาน loss', pr ? (pr.label[I18N.getLang()] || pr.label.th) : T('preset_custom'), pr ? T('preset_status_' + pr.status) : '']);
+    aoa.push([E ? 'Near shading' : 'เงาบัง', cfg.shadeCalc ? T('chk_shadecalc') : T('shade_manual'), E ? 'extra %' : 'เพิ่มเติม %', cfg.shading]);
+    if (wxBuilt && wxBuilt.cal && energy.source === 'nasa-calibrated') aoa.push([E ? 'Calibration point' : 'จุดปรับเทียบ', calName(wxBuilt.cal.p), round(wxBuilt.cal.km, 0) + ' km', 'GHI ×' + wxBuilt.cal.p.ghi]);
     aoa.push([]);
     aoa.push([E ? 'ASSUMPTIONS' : 'สมมติฐาน']);
     [['f_soil', cfg.soiling], ['f_shade', cfg.shading], ['f_mm', cfg.mismatch], ['f_quality', cfg.quality], ['f_wiring', cfg.wiring],
@@ -852,7 +1020,7 @@
     updateRoofBar(); updateAccSummaries();
     renderRoofs(); renderWalkways(); renderObstacles();
     if (summaryOpen && lastAgg) updateResults(lastAgg, lastPer);
-    renderEnergy(); updateKwacHint();
+    buildPresetSelect(); renderEnergy(); updateKwacHint();
     if (!roofs.length && $('confirmMsg')) $('confirmMsg').textContent = '';
   }
 
@@ -897,13 +1065,21 @@
 
     // พารามิเตอร์ (หัวข้อ 2) — เขียนลงหลังคาที่กำลังทำ
     $('roofType').addEventListener('change', function () { var t = ROOF_TYPES[$('roofType').value]; if (t) { $('tiltUnknown').checked = false; $('tilt').disabled = false; $('tilt').value = t.tilt; } syncActiveFromUI(); runCompute(); });
-    ['module', 'tilt', 'setback', 'rowGap', 'colGap', 'orientation', 'eastWest', 'walkwayWidth', 'walkwayEvery'].forEach(function (id) {
+    ['module', 'tilt', 'setback', 'rowGap', 'colGap', 'orientation', 'eastWest', 'walkwayWidth', 'walkwayEvery', 'parapetH'].forEach(function (id) {
       $(id).addEventListener('change', function () { syncActiveFromUI(); runCompute(); });
     });
     // หัวข้อ 5 · พลังงาน (ค่าทั้งไซต์)
-    ['wxNasa', 'wxMonthly', 'wxCal', 'wxMonthlyText', 'enDcac', 'enInvEff', 'enOpt', 'enOptPct', 'enSoil', 'enShade', 'enMm', 'enQual', 'enWire', 'enLow', 'enIam', 'enUc', 'enAlb'].forEach(function (id) {
+    ['wxNasa', 'wxMonthly', 'wxCal', 'wxMonthlyText', 'enDcac', 'enInvEff', 'enOpt', 'enOptPct', 'enShadeCalc', 'enShade'].forEach(function (id) {
       $(id).addEventListener('change', function () { refreshEnergy(); });
     });
+    Object.keys(PRESET_FIELDS).forEach(function (k) {   // แก้ค่าเอง → เปลี่ยนเป็น "กำหนดเอง"
+      $(PRESET_FIELDS[k]).addEventListener('change', function () { $('enPreset').value = 'custom'; updatePresetNote(); refreshEnergy(); });
+    });
+    $('enPreset').addEventListener('change', function () { applyPreset($('enPreset').value); updatePresetNote(); refreshEnergy(); });
+    $('calAddMonthly').addEventListener('click', addCalFromMonthly);
+    $('calAddYield').addEventListener('click', addCalFromYield);
+    $('calCopy').addEventListener('click', copyCal);
+    buildPresetSelect(); applyPreset($('enPreset').value); renderCalList();
     $('azimuth').addEventListener('input', updateAzLabel);
     $('azimuth').addEventListener('change', function () { syncActiveFromUI(); renderRoofs(); renderRoofDetail(); runCompute(); });
     $('tiltUnknown').addEventListener('change', function () { $('tilt').disabled = $('tiltUnknown').checked; syncActiveFromUI(); runCompute(); });

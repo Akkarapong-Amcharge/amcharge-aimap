@@ -288,3 +288,16 @@ table.en-table tr.en-total td { font-weight: 800; border-top: 2px solid var(--in
 .el-bar i.neg { background: #f87171; } .el-bar i.pos { background: #34d399; } .el-bar i.zero { background: transparent; }
 .el-pct { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
 .el-pct.neg { color: var(--danger); } .el-pct.pos { color: var(--ok); } .el-pct.zero { color: var(--ink-soft); }
+
+/* ---- loss tags / calibration list / presets ---- */
+em.tag { font-style: normal; font-size: 9.5px; font-weight: 700; padding: 0 5px; border-radius: 4px; margin-left: 4px; vertical-align: 1px; white-space: nowrap; }
+em.tag-calc { background: #dbeafe; color: #1d4ed8; }
+em.tag-assume { background: #fef3c7; color: #92400e; }
+em.tag-sheet { background: #e5e7eb; color: #374151; }
+.el-row { grid-template-columns: minmax(0, 1fr) 70px 58px; }
+.cal-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.cal-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; font-size: 12px; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
+.cal-row.near { border-color: var(--accent); }
+.preset-reference, .preset-draft, .preset-custom { color: var(--warn) !important; }
+.preset-approved { color: var(--ok) !important; }
+.warn-text { color: var(--warn) !important; font-weight: 600; }
