@@ -99,6 +99,7 @@
                   <option value="lr7-560">Hi-MO X10 LR7-60HVH-560M · 560W (1.134×1.990 · 25.3kg)</option>
                   <option value="lr5-585">Hi-MO 6 LR5-72HTH-585M · 585W (1.134×2.278 · 27.5kg)</option>
                   <option value="lr7-640">Hi-MO 9 LR7-72HYD-640M · 640W (1.134×2.382 · 33.5kg)</option>
+                  <option value="lr7-650h">Hi-MO X10 LR7-72HVH-650M · 650W (1.134×2.382 · 28.5kg)</option>
                   <option value="sg-720">Sungrow SG-66TG5B-X · 720W (1.305×2.384 · 37kg)</option>
                 </select>
               </label>
@@ -143,6 +144,7 @@
                 </select>
               </label>
             </div>
+            <label class="checkbox" style="margin-top:8px"><input id="eastWest" type="checkbox"> <span data-i18n="chk_ew">วางแบบ East-West (หันหลังชนกันเป็นคู่ · ครึ่งหนึ่งหันทิศตรงข้าม)</span></label>
             <div class="btns" style="margin-top:10px">
               <button id="btnCompute" class="primary" data-i18n="btn_compute">คำนวณใหม่</button>
             </div>
@@ -215,6 +217,48 @@
             <p class="hint" style="margin:6px 0 0" data-i18n="s4_list_hint">กดปุ่มแล้ว “คลิกตำแหน่ง” บนแผนที่ 1 ครั้ง = วาง 1 วง · คลิกชิป อ1 เพื่อดู/แก้รัศมี · ✕ ลบ</p>
           </div>
         </section>
+
+        <section class="acc" data-acc="5">
+          <button class="acc-head" type="button">
+            <span class="acc-no">5</span>
+            <span class="acc-title" data-i18n="s5e_title">5 · พลังงาน (kWh)</span>
+            <span class="acc-sum" id="sum5"></span>
+            <span class="acc-chev" aria-hidden="true">▾</span>
+          </button>
+          <div class="acc-body">
+            <p class="hint" style="margin:0 0 10px" data-i18n="s5e_hint">จำลองรายชั่วโมงทั้งปีจากแดด/อุณหภูมิของพิกัดไซต์ (แบบเดียวกับ PVsyst) — ตั้งค่าครั้งเดียวใช้ทั้งไซต์ · ผลดูได้ใน “สรุปโครงการ”</p>
+            <p class="sub-title" data-i18n="s5e_wx">ข้อมูลอากาศ</p>
+            <label class="checkbox"><input type="radio" name="wxSrc" id="wxNasa" value="nasa" checked> <span data-i18n="wx_nasa">NASA POWER (ดึงอัตโนมัติตามพิกัด)</span></label>
+            <label class="checkbox" style="margin-left:22px"><input id="wxCal" type="checkbox" checked> <span data-i18n="wx_cal">ปรับเทียบให้ใกล้ Meteonorm (แดด ×0.89 · จุดอ้างอิงกรุงเทพฯ)</span></label>
+            <label class="checkbox" style="margin-top:4px"><input type="radio" name="wxSrc" id="wxMonthly" value="monthly"> <span data-i18n="wx_monthly">ตารางแดดรายเดือน (คัดลอกจากรายงาน PVsyst / Meteonorm)</span></label>
+            <textarea id="wxMonthlyText" class="wx-text" rows="5" data-i18n-ph="wx_monthly_ph" placeholder="วาง 12 บรรทัด: GHI  DHI  T_amb (เช่น คัดลอกตาราง Balances จาก PVsyst)"></textarea>
+            <p id="wxStatus" class="hint" style="margin:4px 0 0"></p>
+
+            <p class="sub-title" style="margin-top:12px" data-i18n="s5e_inv">อินเวอร์เตอร์</p>
+            <div class="row">
+              <label class="field"><span data-i18n="f_dcac">DC/AC ratio</span><input id="enDcac" type="number" value="1.10" min="0.5" max="2" step="0.01"></label>
+              <label class="field"><span data-i18n="f_inveff">ประสิทธิภาพ (%)</span><input id="enInvEff" type="number" value="98.2" min="90" max="99.9" step="0.1"></label>
+            </div>
+            <p id="enKwac" class="hint" style="margin:4px 0 0"></p>
+            <label class="checkbox" style="margin-top:6px"><input id="enOpt" type="checkbox"> <span data-i18n="chk_opt">มี optimizer (loss</span>&nbsp;<input id="enOptPct" class="mini-num" type="number" value="2.28" min="0" max="10" step="0.01">&nbsp;%)</label>
+
+            <details class="adv">
+              <summary data-i18n="s5e_adv">ค่า loss ขั้นสูง (ค่าเริ่มต้นตามรายงาน PVsyst)</summary>
+              <div class="adv-grid">
+                <label class="field"><span data-i18n="f_soil">ฝุ่น (%)</span><input id="enSoil" type="number" value="3.5" step="0.1"></label>
+                <label class="field"><span data-i18n="f_shade">เงาบัง (%)</span><input id="enShade" type="number" value="0.5" step="0.1"></label>
+                <label class="field"><span data-i18n="f_mm">Mismatch (%)</span><input id="enMm" type="number" value="0.5" step="0.1"></label>
+                <label class="field"><span data-i18n="f_quality">คุณภาพแผง (%)</span><input id="enQual" type="number" value="-0.75" step="0.05"></label>
+                <label class="field"><span data-i18n="f_wiring">สายไฟ DC ที่ STC (%)</span><input id="enWire" type="number" value="1.5" step="0.1"></label>
+                <label class="field"><span data-i18n="f_lowlight">แสงอ่อน @200W/m² (%)</span><input id="enLow" type="number" value="1.8" step="0.1"></label>
+                <label class="field"><span data-i18n="f_iam">IAM b0</span><input id="enIam" type="number" value="0.05" step="0.01"></label>
+                <label class="field"><span data-i18n="f_uc">Uc (W/m²K)</span><input id="enUc" type="number" value="20" step="1"></label>
+                <label class="field"><span data-i18n="f_albedo">Albedo</span><input id="enAlb" type="number" value="0.2" step="0.05"></label>
+              </div>
+            </details>
+            <p class="src-note" style="margin:8px 0 0" data-i18n="s5e_note">ตรวจเทียบรายงาน PVsyst (My Park Mall 325 kWp) ด้วยแดดชุดเดียวกัน: ต่าง ~+1% · ค่าจาก NASA เป็นประมาณการ ±10% ตามแหล่งข้อมูลอากาศ</p>
+          </div>
+        </section>
       </div>
 
       <!-- ปุ่มหลักล่างสุด (ติดตลอด) -->
@@ -234,6 +278,13 @@
         <button id="modalClose" class="modal-x" aria-label="close">✕</button>
       </div>
       <div class="modal-scroll">
+        <div id="enBlock" class="en-block">
+          <div class="en-head">
+            <h4 class="cmp-title" data-i18n="en_title">พลังงานที่ผลิตได้ (จำลองรายชั่วโมง)</h4>
+            <span id="enSrc" class="badge"></span>
+          </div>
+          <div id="enBody"></div>
+        </div>
         <div id="results">
           <div class="metrics">
             <div class="metric hero">
@@ -282,7 +333,7 @@
             <table class="cmp">
               <thead><tr>
                 <th data-i18n="th_model">รุ่น</th><th data-i18n="th_panels">แผง</th><th>kWp</th>
-                <th data-i18n="th_ton">ตัน</th><th data-i18n="th_kgm2">กก./ม²</th>
+                <th data-i18n="th_ton">ตัน</th><th data-i18n="th_kgm2">กก./ม²</th><th data-i18n="th_mwh">MWh/ปี</th>
               </tr></thead>
               <tbody id="cmpBody"></tbody>
             </table>
@@ -307,6 +358,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="i18n.js"></script>
   <script src="engine.js"></script>
+  <script src="energy.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

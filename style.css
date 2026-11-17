@@ -263,3 +263,28 @@ table.cmp tr.win td { background: var(--accent-soft); color: var(--accent-dark);
   #map { min-height: 46vh; }
   header .search input { width: 180px; }
 }
+
+/* ---- Energy (section 5 + summary) ---- */
+.wx-text { width: 100%; margin-top: 6px; font: 12px/1.4 ui-monospace, Consolas, monospace; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; resize: vertical; }
+.mini-num { width: 64px !important; padding: 3px 6px !important; font-size: 12px; }
+details.adv { margin-top: 10px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; background: var(--panel-2); }
+details.adv summary { cursor: pointer; font-size: 12.5px; font-weight: 700; color: var(--ink-soft); }
+.adv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.en-block { margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.en-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.en-head .cmp-title { margin: 0; }
+.en-chart { display: flex; align-items: flex-end; gap: 4px; height: 120px; margin: 12px 0 6px; padding: 0 2px; }
+.en-bar { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; }
+.en-bar-fill { width: 100%; background: linear-gradient(180deg, #f59e0b, #fbbf24); border-radius: 4px 4px 0 0; min-height: 2px; }
+.en-bar-m { font-size: 10px; color: var(--ink-soft); margin-top: 3px; white-space: nowrap; }
+table.en-table { font-size: 12px; margin-top: 4px; }
+table.en-table td, table.en-table th { padding: 4px 6px; }
+table.en-table tr.en-total td { font-weight: 800; border-top: 2px solid var(--ink-soft); }
+.en-loss { display: flex; flex-direction: column; gap: 3px; font-size: 12px; margin-top: 4px; }
+.el-row { display: grid; grid-template-columns: minmax(0, 1fr) 90px 64px; align-items: center; gap: 8px; }
+.el-row.el-total { grid-template-columns: minmax(0, 1fr) auto; background: var(--accent-soft); color: var(--accent-dark); border-radius: 6px; padding: 3px 8px; margin: 2px 0; }
+.el-bar { height: 8px; background: var(--panel-2); border-radius: 4px; overflow: hidden; display: block; }
+.el-bar i { display: block; height: 100%; }
+.el-bar i.neg { background: #f87171; } .el-bar i.pos { background: #34d399; } .el-bar i.zero { background: transparent; }
+.el-pct { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+.el-pct.neg { color: var(--danger); } .el-pct.pos { color: var(--ok); } .el-pct.zero { color: var(--ink-soft); }

@@ -70,7 +70,7 @@ window.I18N = (function () {
 
       s6_title: '6 · เปรียบเทียบ PV (ทั้งไซต์)',
       th_model: 'รุ่น', th_panels: 'แผง', th_ton: 'ตัน', th_kgm2: 'กก./ม²',
-      s6_hint: '★ = กำลังติดตั้งรวมสูงสุด ถ้าใช้รุ่นเดียวกันทุกหลังคา (จำลองทับทุกหลัง) · ตัวเลขจาก engine ทั้งหมด',
+      s6_hint: '★ = ผลิตพลังงานต่อปีสูงสุด (MWh/ปี) ถ้าใช้รุ่นเดียวกันทุกหลังคา · ถ้ายังไม่มีผลพลังงาน จะใช้ kWp สูงสุดแทน · ตัวเลขจาก engine ทั้งหมด',
 
       compass_cap: 'ทิศแผง',
       // dynamic
@@ -90,7 +90,38 @@ window.I18N = (function () {
       badge_img: 'ภาพ: Esri World Imagery', badge_ci: 'Segment: C&I', badge_res: 'Segment: Residential',
       warn_title: '⚠ ข้อควรทราบ',
       dirs: ['เหนือ (N)', 'ต.อ.เฉียงเหนือ (NE)', 'ตะวันออก (E)', 'ต.อ.เฉียงใต้ (SE)', 'ใต้ (S)', 'ต.ต.เฉียงใต้ (SW)', 'ตะวันตก (W)', 'ต.ต.เฉียงเหนือ (NW)'],
-      az_rec: ' ✓ แนะนำ (ไทย)'
+      az_rec: ' ✓ แนะนำ (ไทย)',
+
+      // ---- พลังงาน (energy) ----
+      chk_ew: 'วางแบบ East-West (หันหลังชนกันเป็นคู่ · ครึ่งหนึ่งหันทิศตรงข้าม)',
+      s5e_title: '5 · พลังงาน (kWh)',
+      s5e_hint: 'จำลองรายชั่วโมงทั้งปีจากแดด/อุณหภูมิของพิกัดไซต์ (แบบเดียวกับ PVsyst) — ตั้งค่าครั้งเดียวใช้ทั้งไซต์ · ผลดูได้ใน “สรุปโครงการ”',
+      s5e_wx: 'ข้อมูลอากาศ', wx_nasa: 'NASA POWER (ดึงอัตโนมัติตามพิกัด)',
+      wx_cal: 'ปรับเทียบให้ใกล้ Meteonorm (แดด ×0.89 · จุดอ้างอิงกรุงเทพฯ)',
+      wx_monthly: 'ตารางแดดรายเดือน (คัดลอกจากรายงาน PVsyst / Meteonorm)',
+      wx_monthly_ph: 'วาง 12 บรรทัด: GHI  DHI  T_amb (เช่น คัดลอกตาราง Balances จาก PVsyst)',
+      s5e_inv: 'อินเวอร์เตอร์', f_dcac: 'DC/AC ratio', f_inveff: 'ประสิทธิภาพอินเวอร์เตอร์ (%)', chk_opt: 'มี optimizer (loss',
+      s5e_adv: 'ค่า loss ขั้นสูง (ค่าเริ่มต้นตามรายงาน PVsyst)',
+      f_soil: 'ฝุ่น (%)', f_shade: 'เงาบัง (%)', f_mm: 'Mismatch (%)', f_quality: 'คุณภาพแผง (%)', f_wiring: 'สายไฟ DC ที่ STC (%)',
+      f_lowlight: 'แสงอ่อน @200W/m² (%)', f_iam: 'IAM b0', f_uc: 'Uc (W/m²K)', f_albedo: 'Albedo',
+      s5e_note: 'ตรวจเทียบรายงาน PVsyst (My Park Mall 325 kWp) ด้วยแดดชุดเดียวกัน: ต่าง ~+1% · ค่าจาก NASA เป็นประมาณการ ±10% ตามแหล่งข้อมูลอากาศ',
+      en_title: 'พลังงานที่ผลิตได้ (จำลองรายชั่วโมง)', th_mwh: 'MWh/ปี',
+      en_kwac: function (kwac, kwp) { return '= อินเวอร์เตอร์รวม ' + kwac + ' kWac (แผง ' + kwp + ' kWp)'; },
+      en_loading: 'กำลังดึงข้อมูลอากาศและคำนวณพลังงาน…',
+      en_err_monthly: 'ตารางรายเดือนไม่ครบ — ต้องมี 12 บรรทัด (GHI [DHI] [T_amb])',
+      en_err_fetch: 'ดึงข้อมูลอากาศจาก NASA ไม่สำเร็จ — ตรวจอินเทอร์เน็ต แล้วลองใหม่',
+      'en_src_nasa-calibrated': 'NASA POWER · ปรับเทียบ Meteonorm (ประมาณการ ±10%)',
+      'en_src_nasa-raw': 'NASA POWER · ไม่ปรับเทียบ (มักสูงเกิน ~10%)',
+      'en_src_monthly-import': 'ตารางแดดรายเดือนที่นำเข้า',
+      en_m_grid: 'พลังงานจ่ายเข้าระบบ', en_m_spec: 'ผลผลิตจำเพาะ', en_m_pr: 'Performance Ratio (PR)', u_year: 'ปี',
+      months: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
+      en_th_month: 'เดือน', en_year: 'ทั้งปี', en_loss_title: 'Loss diagram',
+      en_disclaimer: 'ประมาณการเพื่อการวางแผนและเสนอราคา ไม่ใช่รายงาน bankable · สูตรสาธารณะ (NOAA, Perez 1990, ASHRAE IAM, แบบจำลองอุณหภูมิแบบ PVsyst) · ความแม่นขึ้นกับข้อมูลอากาศเป็นหลัก',
+      loss_ghi: 'แดดแนวราบ (GHI)', loss_transposition: 'แดดบนระนาบแผง', loss_shading: 'เงาบัง', loss_soiling: 'ฝุ่น/สิ่งสกปรก',
+      loss_iam: 'มุมตกกระทบ (IAM)', loss_globEff: 'แดดที่ใช้ได้จริงบนแผง', loss_eNom: 'พลังงานตามสเปก (STC)',
+      loss_irradiance: 'แสงอ่อน', loss_temperature: 'ความร้อน', loss_quality: 'คุณภาพแผง', loss_mismatch: 'Mismatch',
+      loss_optimizer: 'Optimizer', loss_ohmic: 'สายไฟ DC', loss_eArray: 'พลังงานจากแผง (DC)',
+      loss_inverter: 'ประสิทธิภาพอินเวอร์เตอร์', loss_clipping: 'เกินพิกัดอินเวอร์เตอร์ (clipping)', loss_eGrid: 'พลังงานจ่ายเข้าระบบ'
     },
     en: {
       subtitle: 'AI Roof Planner · Demo',
@@ -160,7 +191,7 @@ window.I18N = (function () {
 
       s6_title: '6 · Compare PV (whole site)',
       th_model: 'Model', th_panels: 'Panels', th_ton: 'ton', th_kgm2: 'kg/m²',
-      s6_hint: '★ = highest total capacity if every roof used the same model (applied across all roofs) · all numbers from the engine',
+      s6_hint: '★ = most energy per year (MWh/yr) if every roof used the same model · falls back to highest kWp until energy is computed · all numbers from the engines',
 
       compass_cap: 'Facing',
       status_cleared: 'Cleared — place a size or press "Start drawing"',
@@ -179,7 +210,38 @@ window.I18N = (function () {
       badge_img: 'Imagery: Esri World Imagery', badge_ci: 'Segment: C&I', badge_res: 'Segment: Residential',
       warn_title: '⚠ Note',
       dirs: ['North (N)', 'Northeast (NE)', 'East (E)', 'Southeast (SE)', 'South (S)', 'Southwest (SW)', 'West (W)', 'Northwest (NW)'],
-      az_rec: ' ✓ recommended (TH)'
+      az_rec: ' ✓ recommended (TH)',
+
+      // ---- energy ----
+      chk_ew: 'East-West layout (back-to-back pairs · half the panels face the opposite way)',
+      s5e_title: '5 · Energy (kWh)',
+      s5e_hint: 'Hourly simulation over a full year from the site\'s irradiance/temperature (same approach as PVsyst) — site-wide settings · results appear in “Project summary”',
+      s5e_wx: 'Weather data', wx_nasa: 'NASA POWER (fetched automatically for the site)',
+      wx_cal: 'Calibrate towards Meteonorm (irradiance ×0.89 · Bangkok reference)',
+      wx_monthly: 'Monthly irradiation table (copy from a PVsyst / Meteonorm report)',
+      wx_monthly_ph: 'Paste 12 lines: GHI  DHI  T_amb (e.g. the PVsyst “Balances” table)',
+      s5e_inv: 'Inverter', f_dcac: 'DC/AC ratio', f_inveff: 'Inverter efficiency (%)', chk_opt: 'Optimizers (loss',
+      s5e_adv: 'Advanced losses (defaults from the PVsyst report)',
+      f_soil: 'Soiling (%)', f_shade: 'Near shading (%)', f_mm: 'Mismatch (%)', f_quality: 'Module quality (%)', f_wiring: 'DC wiring at STC (%)',
+      f_lowlight: 'Low light @200W/m² (%)', f_iam: 'IAM b0', f_uc: 'Uc (W/m²K)', f_albedo: 'Albedo',
+      s5e_note: 'Checked against a PVsyst report (My Park Mall 325 kWp) with the same irradiance: ~+1% · NASA-based values are estimates ±10% depending on weather source',
+      en_title: 'Energy yield (hourly simulation)', th_mwh: 'MWh/yr',
+      en_kwac: function (kwac, kwp) { return '= total inverter ' + kwac + ' kWac (array ' + kwp + ' kWp)'; },
+      en_loading: 'Fetching weather data and computing energy…',
+      en_err_monthly: 'Monthly table incomplete — need 12 lines (GHI [DHI] [T_amb])',
+      en_err_fetch: 'Could not fetch NASA weather data — check the connection and try again',
+      'en_src_nasa-calibrated': 'NASA POWER · calibrated to Meteonorm (estimate ±10%)',
+      'en_src_nasa-raw': 'NASA POWER · uncalibrated (often ~10% high)',
+      'en_src_monthly-import': 'Imported monthly irradiation table',
+      en_m_grid: 'Energy injected into grid', en_m_spec: 'Specific production', en_m_pr: 'Performance Ratio (PR)', u_year: 'yr',
+      months: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+      en_th_month: 'Month', en_year: 'Year', en_loss_title: 'Loss diagram',
+      en_disclaimer: 'Estimate for planning and quotations, not a bankable report · public models (NOAA, Perez 1990, ASHRAE IAM, PVsyst-style thermal model) · accuracy depends mainly on the weather data',
+      loss_ghi: 'Global horizontal irradiation', loss_transposition: 'Global incident in coll. plane', loss_shading: 'Near shadings', loss_soiling: 'Soiling',
+      loss_iam: 'IAM factor on global', loss_globEff: 'Effective irradiation on collectors', loss_eNom: 'Array nominal energy (STC)',
+      loss_irradiance: 'PV loss due to irradiance level', loss_temperature: 'PV loss due to temperature', loss_quality: 'Module quality', loss_mismatch: 'Mismatch',
+      loss_optimizer: 'Optimizer', loss_ohmic: 'Ohmic wiring loss', loss_eArray: 'Array energy (DC)',
+      loss_inverter: 'Inverter efficiency', loss_clipping: 'Inverter over nominal power (clipping)', loss_eGrid: 'Energy injected into grid'
     }
   };
 

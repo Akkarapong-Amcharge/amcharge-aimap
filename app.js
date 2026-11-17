@@ -6,15 +6,20 @@
   'use strict';
 
   // ---------- master data ----------
+  // gamma = temperature coefficient ของ Pmax (%/°C) · gammaOk = ยืนยันจาก datasheet แล้ว (ไม่งั้นใช้ค่าเริ่มต้น -0.29)
+  var GAMMA_DEFAULT = -0.29;
   var MODULES = {
     'lr8-620': { label: 'Hi-MO 7 LR8-66HGD-620M · 620W', short: '620M', watt: 620, width: 1.134, height: 2.382, weightKg: 33.5 },
     'lr7-505': { label: 'Hi-MO X10 LR7-54HVH-505M · 505W', short: '505M', watt: 505, width: 1.134, height: 1.800, weightKg: 21.6 },
     'lr7-560': { label: 'Hi-MO X10 LR7-60HVH-560M · 560W', short: '560M', watt: 560, width: 1.134, height: 1.990, weightKg: 25.3 },
     'lr5-585': { label: 'Hi-MO 6 LR5-72HTH-585M · 585W', short: '585M', watt: 585, width: 1.134, height: 2.278, weightKg: 27.5 },
     'lr7-640': { label: 'Hi-MO 9 LR7-72HYD-640M · 640W', short: '640M', watt: 640, width: 1.134, height: 2.382, weightKg: 33.5 },
+    'lr7-650h': { label: 'Hi-MO X10 LR7-72HVH-650M · 650W', short: '650M', watt: 650, width: 1.134, height: 2.382, weightKg: 28.5, gamma: -0.26, gammaOk: true },
     'sg-720': { label: 'Sungrow SG-66TG5B-X · 720W', short: 'SG720', watt: 720, width: 1.305, height: 2.384, weightKg: 37 }
   };
-  var MODULE_ORDER = ['lr8-620', 'lr7-505', 'lr7-560', 'lr5-585', 'lr7-640', 'sg-720'];
+  var MODULE_ORDER = ['lr8-620', 'lr7-505', 'lr7-560', 'lr5-585', 'lr7-640', 'lr7-650h', 'sg-720'];
+  function modGamma(m) { return typeof m.gamma === 'number' ? m.gamma : GAMMA_DEFAULT; }
+  function modEff(m) { return m.watt / (m.width * m.height * 1000); }
   var ROOF_TYPES = {
     metal: { label: 'เมทัลชีท (โรงงาน)', tilt: 7 },
     flat:  { label: 'ดาดฟ้าเรียบ',       tilt: 3 },
@@ -25,7 +30,7 @@
     return {
       module: 'lr8-620', roofType: 'metal', tilt: 7, tiltUnknown: false, az: 180,
       setback: 1.0, rowGap: 0.05, colGap: 0.02, orientation: 'portrait',
-      walkwayWidth: 0, walkwayEvery: 6
+      walkwayWidth: 0, walkwayEvery: 6, ew: false
     };
   }
 
@@ -71,7 +76,7 @@
     var rf = aRoof();
     var enabled = !!rf;
     // เปิด/ปิดพารามิเตอร์เมื่อไม่มีหลังคาที่ทำอยู่
-    ['module', 'roofType', 'tilt', 'tiltUnknown', 'azimuth', 'setback', 'rowGap', 'colGap', 'orientation', 'walkwayWidth', 'walkwayEvery', 'btnCompute', 'btnWalkway', 'btnClearWalkway', 'btnObstacle', 'btnClearObstacle', 'obstacleRadius', 'drawWalkwayWidth'].forEach(function (id) {
+    ['module', 'roofType', 'tilt', 'tiltUnknown', 'azimuth', 'setback', 'rowGap', 'colGap', 'orientation', 'eastWest', 'walkwayWidth', 'walkwayEvery', 'btnCompute', 'btnWalkway', 'btnClearWalkway', 'btnObstacle', 'btnClearObstacle', 'obstacleRadius', 'drawWalkwayWidth'].forEach(function (id) {
       var el = $(id); if (el) el.disabled = !enabled;
     });
     if (rf) {
@@ -79,7 +84,7 @@
       $('tilt').value = rf.tilt; $('tiltUnknown').checked = rf.tiltUnknown; $('tilt').disabled = rf.tiltUnknown;
       $('azimuth').value = rf.az;
       $('setback').value = rf.setback; $('rowGap').value = rf.rowGap; $('colGap').value = rf.colGap;
-      $('orientation').value = rf.orientation;
+      $('orientation').value = rf.orientation; $('eastWest').checked = !!rf.ew;
       $('walkwayWidth').value = rf.walkwayWidth; $('walkwayEvery').value = rf.walkwayEvery;
     }
     updateAzLabel();
@@ -96,7 +101,7 @@
     rf.setback = parseFloat($('setback').value) || 0;
     rf.rowGap = parseFloat($('rowGap').value) || 0;
     rf.colGap = parseFloat($('colGap').value) || 0;
-    rf.orientation = $('orientation').value;
+    rf.orientation = $('orientation').value; rf.ew = $('eastWest').checked;
     rf.walkwayWidth = parseFloat($('walkwayWidth').value) || 0;
     rf.walkwayEvery = parseInt($('walkwayEvery').value, 10) || 0;
   }
@@ -108,6 +113,7 @@
   function updateAccSummaries() {
     var rf = aRoof();
     if ($('sum1')) $('sum1').textContent = roofs.length ? I18N.t('sum_roofs', roofs.length) : '';
+    if ($('sum5')) $('sum5').textContent = energyState === 'ok' && energy ? (fmt(energy.year.eGrid / 1000, 0) + ' MWh · PR ' + fmt(energy.year.pr * 100, 1) + '%') : '';
     if (!$('sum2')) return;
     if (rf) {
       var m = MODULES[rf.module];
@@ -134,7 +140,7 @@
     var p = base ? {
       module: base.module, roofType: base.roofType, tilt: base.tilt, tiltUnknown: base.tiltUnknown,
       setback: base.setback, rowGap: base.rowGap, colGap: base.colGap, orientation: base.orientation,
-      walkwayWidth: base.walkwayWidth, walkwayEvery: base.walkwayEvery
+      walkwayWidth: base.walkwayWidth, walkwayEvery: base.walkwayEvery, ew: !!base.ew
     } : defaultRoofParams();
     p.az = currentAz();              // ทิศ = ค่าสไลเดอร์ปัจจุบัน
     p.ring = ring; p.walkways = []; p.obstacles = [];
@@ -398,10 +404,152 @@
     lastAgg = out.agg; lastPer = out.per;
     drawPanels(out.panels);
     if (summaryOpen) updateResults(out.agg, out.per);
+    if (summaryOpen || wxBuilt) refreshEnergy(out); else updateKwacHint();
   }
   function drawPanels(panels) {
     panelLayer.clearLayers();
     for (var i = 0; i < panels.length; i++) L.polygon(panels[i], { color: '#1d4ed8', weight: 0.6, fillColor: '#3b82f6', fillOpacity: 0.7 }).addTo(panelLayer);
+  }
+
+  // ---------- energy (จำลองรายชั่วโมงแบบ PVsyst — ตัวเลขทั้งหมดมาจาก energy.js) ----------
+  var NASA = 'https://power.larc.nasa.gov/api/temporal/', WX_YEAR = 2023, WX_PARAMS = 'ALLSKY_SFC_SW_DWN,ALLSKY_SFC_SW_DIFF,T2M';
+  var wxRaw = {};                         // ข้อมูลดิบ NASA ต่อจุดกริด
+  var wxBuilt = null, wxBuiltSig = '';    // ชุดรายชั่วโมงที่ปรับแล้ว (ตามค่าตั้ง)
+  var energy = null, energyState = 'idle', energyErr = '';   // idle | loading | ok | error
+  function readEnergyCfg() {
+    var num = function (id, d) { var v = parseFloat($(id).value); return isNaN(v) ? d : v; };
+    return {
+      src: $('wxMonthly').checked ? 'monthly' : 'nasa', calibrate: $('wxCal').checked,
+      dcac: Math.max(0.5, num('enDcac', 1.1)), invEff: num('enInvEff', 98.2),
+      optimizer: $('enOpt').checked, optPct: num('enOptPct', 2.28),
+      soiling: num('enSoil', 3.5), shading: num('enShade', 0.5), mismatch: num('enMm', 0.5), quality: num('enQual', -0.75),
+      wiring: num('enWire', 1.5), lowLight: num('enLow', 1.8), iamB0: num('enIam', 0.05), uc: num('enUc', 20), albedo: num('enAlb', 0.2)
+    };
+  }
+  function siteCenter() {
+    var n = 0, la = 0, lo = 0;
+    roofs.forEach(function (rf) { rf.ring.forEach(function (p) { la += p[0]; lo += p[1]; n++; }); });
+    if (!n) { var c = map.getCenter(); return { lat: c.lat, lng: c.lng }; }
+    return { lat: la / n, lng: lo / n };
+  }
+  function parseMonthly(text) {
+    var rows = [];
+    String(text || '').split(/\r?\n/).forEach(function (line) {
+      if (/year|total|รวม|ทั้งปี/i.test(line)) return;
+      var nums = (line.match(/-?\d+(?:\.\d+)?/g) || []).map(parseFloat);
+      if (nums.length) rows.push({ ghi: nums[0], dhi: nums.length > 1 ? nums[1] : NaN, tamb: nums.length > 2 ? nums[2] : NaN });
+    });
+    return rows.length >= 12 ? rows.slice(0, 12) : null;
+  }
+  function loadRawWeather(g) {
+    var key = g.lat.toFixed(2) + '_' + g.lng.toFixed(2);
+    if (wxRaw[key]) return Promise.resolve(wxRaw[key]);
+    try { var s = localStorage.getItem('amc_wx_v1_' + key); if (s) { wxRaw[key] = JSON.parse(s); return Promise.resolve(wxRaw[key]); } } catch (e) {}
+    var q = '/point?parameters=' + WX_PARAMS + '&community=RE&longitude=' + g.lng + '&latitude=' + g.lat + '&format=JSON';
+    var get = function (u) { return fetch(u).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }); };
+    return Promise.all([
+      get(NASA + 'hourly' + q + '&start=' + WX_YEAR + '0101&end=' + WX_YEAR + '1231&time-standard=UTC'),
+      get(NASA + 'climatology' + q)
+    ]).then(function (res) {
+      var d = { hourly: { properties: { parameter: res[0].properties.parameter } }, clim: { properties: { parameter: res[1].properties.parameter } } };
+      wxRaw[key] = d;
+      try { localStorage.setItem('amc_wx_v1_' + key, JSON.stringify(d)); } catch (e) {}
+      return d;
+    });
+  }
+  function getWeather(cfg) {
+    var c = siteCenter(), g = { lat: Math.round(c.lat * 4) / 4, lng: Math.round(c.lng * 4) / 4 };
+    var monthly = null;
+    if (cfg.src === 'monthly') { monthly = parseMonthly($('wxMonthlyText').value); if (!monthly) return Promise.reject(new Error('monthly')); }
+    var sig = g.lat + '_' + g.lng + '|' + cfg.src + '|' + cfg.calibrate + '|' + (monthly ? JSON.stringify(monthly) : '');
+    if (wxBuilt && wxBuiltSig === sig) return Promise.resolve(wxBuilt);
+    return loadRawWeather(g).then(function (raw) {
+      var w = EnergyEngine.buildWeather(raw.hourly, raw.clim, { lat: g.lat, lon: g.lng, tz: Math.round(g.lng / 15), calibrate: cfg.calibrate, monthly: monthly });
+      wxBuilt = w; wxBuiltSig = sig;
+      return w;
+    });
+  }
+  function energyOrientations(out, overrideMod) {
+    var ors = [];
+    out.per.forEach(function (p) {
+      var rf = roofs[p.idx], m = MODULES[overrideMod || rf.module], kwp = p.res.dcCapacityKwp;
+      var base = { tilt: rf.tiltUnknown ? 0 : rf.tilt, gamma: modGamma(m), eff: modEff(m) };
+      if (rf.ew) {   // East-West: แผงครึ่งหนึ่งหันทิศตรงข้าม
+        ors.push(Object.assign({ kwp: kwp / 2, az: rf.az }, base));
+        ors.push(Object.assign({ kwp: kwp / 2, az: (rf.az + 180) % 360 }, base));
+      } else ors.push(Object.assign({ kwp: kwp, az: rf.az }, base));
+    });
+    return ors;
+  }
+  function simulateFor(out, w, cfg, overrideMod) {
+    var c = siteCenter();
+    return EnergyEngine.simulate({
+      lat: c.lat, lon: c.lng, weather: w, orientations: energyOrientations(out, overrideMod),
+      losses: {
+        albedo: cfg.albedo, shadingPct: cfg.shading, soilingPct: cfg.soiling, iamB0: cfg.iamB0, uc: cfg.uc, uv: 0,
+        qualityPct: cfg.quality, mismatchPct: cfg.mismatch, optimizerPct: cfg.optimizer ? cfg.optPct : 0,
+        wiringStcPct: cfg.wiring, lowLight200Pct: cfg.lowLight, invEffPct: cfg.invEff, pacKw: out.agg.kwp / cfg.dcac
+      }
+    });
+  }
+  function updateKwacHint() {
+    var el = $('enKwac'); if (!el) return;
+    var cfg = readEnergyCfg(), kwp = lastAgg ? lastAgg.kwp : 0;
+    el.textContent = kwp ? I18N.t('en_kwac', fmt(kwp / cfg.dcac, 1), fmt(kwp, 1)) : '';
+  }
+  function setWxStatus() {
+    var el = $('wxStatus'); if (!el) return;
+    var T = I18N.t;
+    el.textContent = energyState === 'loading' ? T('en_loading') : energyState === 'error' ? T(energyErr === 'monthly' ? 'en_err_monthly' : 'en_err_fetch')
+      : (energyState === 'ok' && energy ? T('en_src_' + energy.source) : '');
+  }
+  function refreshEnergy(out) {
+    updateKwacHint();
+    if (!roofs.length) { energy = null; energyState = 'idle'; renderEnergy(); return; }
+    var cfg = readEnergyCfg();
+    energyState = 'loading'; renderEnergy();
+    getWeather(cfg).then(function (w) {
+      energy = simulateFor(out || computeAll(), w, cfg);
+      energyState = energy.ok ? 'ok' : 'error'; energyErr = 'sim';
+      renderEnergy(); if (summaryOpen) renderCompare();
+    }).catch(function (e) {
+      energy = null; energyState = 'error'; energyErr = (e && e.message === 'monthly') ? 'monthly' : 'fetch';
+      renderEnergy();
+    });
+  }
+  function enMetric(k, v, u, hero) {
+    return '<div class="metric' + (hero ? ' hero' : '') + '"><div class="k">' + I18N.t(k) + '</div><div><span class="v">' + v + '</span> <span class="u">' + u + '</span></div></div>';
+  }
+  function renderEnergy() {
+    setWxStatus(); updateAccSummaries();
+    var body = $('enBody'), src = $('enSrc'); if (!body) return;
+    var T = I18N.t;
+    src.textContent = energyState === 'ok' && energy ? T('en_src_' + energy.source) : '';
+    if (energyState === 'loading') { body.innerHTML = '<p class="hint">' + T('en_loading') + '</p>'; return; }
+    if (energyState === 'error') { body.innerHTML = '<div class="warn-box">' + T(energyErr === 'monthly' ? 'en_err_monthly' : 'en_err_fetch') + '</div>'; return; }
+    if (!energy || !energy.ok) { body.innerHTML = ''; return; }
+    var y = energy.year, months = T('months');
+    var maxE = Math.max.apply(null, energy.monthly.map(function (m) { return m.eGrid; })) || 1;
+    var html = '<div class="metrics">' +
+      enMetric('en_m_grid', fmt(y.eGrid / 1000, 1), 'MWh/' + T('u_year'), true) +
+      enMetric('en_m_spec', fmt(y.specific, 0), 'kWh/kWp/' + T('u_year')) +
+      enMetric('en_m_pr', fmt(y.pr * 100, 1), '%') + '</div>';
+    html += '<div class="en-chart">' + energy.monthly.map(function (m, i) {
+      return '<div class="en-bar" title="' + months[i] + ': ' + fmt(m.eGrid / 1000, 2) + ' MWh"><div class="en-bar-fill" style="height:' + Math.round(m.eGrid / maxE * 100) + '%"></div><span class="en-bar-m">' + months[i] + '</span></div>';
+    }).join('') + '</div>';
+    html += '<div style="overflow-x:auto"><table class="cmp en-table"><thead><tr><th>' + T('en_th_month') + '</th><th>GHI</th><th>GlobInc</th><th>T_amb</th><th>E_Grid MWh</th><th>PR</th></tr></thead><tbody>' +
+      energy.monthly.map(function (m, i) {
+        return '<tr><td>' + months[i] + '</td><td>' + fmt(m.ghi, 1) + '</td><td>' + fmt(m.globInc, 1) + '</td><td>' + fmt(m.tamb, 1) + '</td><td>' + fmt(m.eGrid / 1000, 2) + '</td><td>' + fmt(m.pr * 100, 1) + '%</td></tr>';
+      }).join('') +
+      '<tr class="en-total"><td>' + T('en_year') + '</td><td>' + fmt(y.ghi, 0) + '</td><td>' + fmt(y.globInc, 0) + '</td><td>' + fmt(y.tamb, 1) + '</td><td>' + fmt(y.eGrid / 1000, 2) + '</td><td>' + fmt(y.pr * 100, 1) + '%</td></tr></tbody></table></div>';
+    html += '<div class="bd-title" style="margin-top:14px">' + T('en_loss_title') + '</div><div class="en-loss">' + energy.losses.map(function (l) {
+      var name = T('loss_' + l.key);
+      if (l.kind) return '<div class="el-row el-total"><span>' + name + '</span><b>' + (l.kind === 'irr' ? fmt(l.value, 0) + ' kWh/m²' : fmt(l.value / 1000, 2) + ' MWh') + '</b></div>';
+      var pct = l.pct * 100, cls = pct < -0.005 ? 'neg' : (pct > 0.005 ? 'pos' : 'zero');
+      return '<div class="el-row"><span>' + name + '</span><span class="el-bar"><i class="' + cls + '" style="width:' + Math.min(100, Math.abs(pct) * 9) + '%"></i></span><span class="el-pct ' + cls + '">' + (pct > 0.005 ? '+' : '') + fmt(pct, 2) + '%</span></div>';
+    }).join('') + '</div>';
+    html += '<p class="src-note" style="margin:8px 0 0">' + T('en_disclaimer') + '</p>';
+    body.innerHTML = html;
   }
 
   // ---------- results / summary modal ----------
@@ -413,6 +561,7 @@
     updateResults(out.agg, out.per);
     if ($('dlMsg')) $('dlMsg').textContent = '';
     summaryOpen = true; $('summaryModal').classList.add('open');
+    refreshEnergy(out);
   }
   function closeSummary() { summaryOpen = false; if ($('summaryModal')) $('summaryModal').classList.remove('open'); }
 
@@ -468,24 +617,73 @@
     });
     aoa.push([]);
     aoa.push([E ? 'COMPARE PV (whole site)' : 'เปรียบเทียบ PV (ทั้งไซต์)']);
-    aoa.push([E ? 'Model' : 'รุ่น', E ? 'Panels' : 'แผง', 'kWp', E ? 'Weight (ton)' : 'น้ำหนัก (ตัน)', 'kg/m2']);
-    var cmp = MODULE_ORDER.map(function (k) { return { k: k, a: computeAll(k).agg }; });
-    var bestKwp = Math.max.apply(null, cmp.map(function (c) { return c.a.kwp; }));
+    aoa.push([E ? 'Model' : 'รุ่น', E ? 'Panels' : 'แผง', 'kWp', E ? 'Weight (ton)' : 'น้ำหนัก (ตัน)', 'kg/m2', E ? 'Energy (MWh/yr)' : 'พลังงาน (MWh/ปี)']);
+    var cmp = compareRows(MODULE_ORDER);
     cmp.forEach(function (c) {
-      var best = (c.a.kwp === bestKwp);
-      aoa.push([(best ? '* ' : '') + MODULES[c.k].label, c.a.count, round(c.a.kwp, 1), round(c.a.weight / 1000, 1), round(c.a.load, 1)]);
+      aoa.push([(c.best ? '* ' : '') + c.m.label, c.agg.count, round(c.agg.kwp, 1), round(c.agg.weight / 1000, 1), round(c.agg.load, 1), c.mwh != null ? round(c.mwh, 1) : '']);
     });
     aoa.push([]);
-    aoa.push([E ? '* Best Choice = model that installs the most total capacity (kWp) on the same roof area.'
-      : '* Best Choice = รุ่นที่ติดตั้งกำลังผลิตรวมได้สูงสุด (kWp) บนพื้นที่หลังคาเดิม']);
-    aoa.push([E ? '  (Higher kWp = more energy per year on the same area; annual kWh to be added later.)'
-      : '  (kWp สูง = ได้พลังงานต่อปีมากกว่าบนพื้นที่เท่ากัน · ค่า kWh/ปี จะเพิ่มในเฟสถัดไป)']);
+    if (cmp.byEnergy) {
+      aoa.push([E ? '* Best Choice = model that produces the most energy per year (MWh/yr) on the same roof area (hourly simulation).'
+        : '* Best Choice = รุ่นที่ผลิตพลังงานต่อปีได้สูงสุด (MWh/ปี) บนพื้นที่หลังคาเดิม (จำลองรายชั่วโมง)']);
+    } else {
+      aoa.push([E ? '* Best Choice = model that installs the most total capacity (kWp) on the same roof area.'
+        : '* Best Choice = รุ่นที่ติดตั้งกำลังผลิตรวมได้สูงสุด (kWp) บนพื้นที่หลังคาเดิม']);
+      aoa.push([E ? '  (Open the project summary to compute MWh/yr and rank by energy instead.)'
+        : '  (เปิด “สรุปโครงการ” ให้คำนวณพลังงานก่อน จะจัดอันดับตาม MWh/ปี แทน)']);
+    }
     var ws = XLSX.utils.aoa_to_sheet(aoa);
-    ws['!cols'] = [{ wch: 34 }, { wch: 16 }, { wch: 30 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 12 }, { wch: 12 }];
+    ws['!cols'] = [{ wch: 34 }, { wch: 16 }, { wch: 30 }, { wch: 12 }, { wch: 12 }, { wch: 16 }, { wch: 10 }, { wch: 12 }, { wch: 12 }, { wch: 12 }];
     var wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, E ? 'Summary' : 'สรุป');
+    if (energyState === 'ok' && energy && energy.ok) XLSX.utils.book_append_sheet(wb, energySheet(out, E), E ? 'Energy' : 'พลังงาน');
     XLSX.writeFile(wb, 'Amcharge_' + safeName() + '.xlsx');
     $('dlMsg').textContent = I18N.t('dl_ok');
+  }
+  function pvsystAz(az) { var a = az - 180; if (a > 180) a -= 360; if (a <= -180) a += 360; return round(a, 1); }
+  function energySheet(out, E) {
+    var cfg = readEnergyCfg(), y = energy.year, T = I18N.t, months = T('months'), aoa = [];
+    aoa.push([E ? 'ENERGY YIELD — hourly simulation' : 'พลังงานที่ผลิตได้ — จำลองรายชั่วโมง']);
+    aoa.push([E ? 'Project' : 'ชื่อโครงการ', projectName()]);
+    aoa.push([E ? 'Weather data' : 'ข้อมูลอากาศ', T('en_src_' + energy.source)]);
+    aoa.push([E ? 'Installed DC (kWp)' : 'กำลังติดตั้ง DC (kWp)', round(energy.kwp, 1)]);
+    aoa.push([E ? 'Inverter AC (kWac)' : 'อินเวอร์เตอร์รวม (kWac)', round(energy.kwp / cfg.dcac, 1), 'DC/AC', cfg.dcac]);
+    aoa.push([]);
+    aoa.push([E ? 'Energy injected into grid (MWh/yr)' : 'พลังงานจ่ายเข้าระบบ (MWh/ปี)', round(y.eGrid / 1000, 2)]);
+    aoa.push([E ? 'Specific production (kWh/kWp/yr)' : 'ผลผลิตจำเพาะ (kWh/kWp/ปี)', round(y.specific, 0)]);
+    aoa.push(['Performance Ratio PR (%)', round(y.pr * 100, 2)]);
+    aoa.push([]);
+    aoa.push([E ? 'MONTHLY' : 'รายเดือน']);
+    aoa.push([E ? 'Month' : 'เดือน', 'GlobHor kWh/m2', 'DiffHor kWh/m2', 'T_Amb °C', 'GlobInc kWh/m2', 'GlobEff kWh/m2', 'EArray MWh', 'E_Grid MWh', 'PR']);
+    energy.monthly.forEach(function (m, i) {
+      aoa.push([months[i], round(m.ghi, 1), round(m.dhi, 1), round(m.tamb, 2), round(m.globInc, 1), round(m.globEff, 1), round(m.eArray / 1000, 2), round(m.eGrid / 1000, 2), round(m.pr, 3)]);
+    });
+    aoa.push([T('en_year'), round(y.ghi, 1), round(y.dhi, 1), round(y.tamb, 2), round(y.globInc, 1), round(y.globEff, 1), round(y.eArray / 1000, 2), round(y.eGrid / 1000, 2), round(y.pr, 3)]);
+    aoa.push([]);
+    aoa.push([T('en_loss_title')]);
+    energy.losses.forEach(function (l) {
+      aoa.push(l.kind ? [T('loss_' + l.key), l.kind === 'irr' ? round(l.value, 1) : round(l.value / 1000, 2), l.kind === 'irr' ? 'kWh/m2' : 'MWh']
+        : [T('loss_' + l.key), round(l.pct * 100, 2), '%']);
+    });
+    aoa.push([]);
+    aoa.push([E ? 'ASSUMPTIONS' : 'สมมติฐาน']);
+    [['f_soil', cfg.soiling], ['f_shade', cfg.shading], ['f_mm', cfg.mismatch], ['f_quality', cfg.quality], ['f_wiring', cfg.wiring],
+      ['f_lowlight', cfg.lowLight], ['f_iam', cfg.iamB0], ['f_uc', cfg.uc], ['f_albedo', cfg.albedo], ['f_inveff', cfg.invEff]]
+      .forEach(function (a) { aoa.push([T(a[0]), a[1]]); });
+    aoa.push([E ? 'Optimizer loss (%)' : 'Optimizer loss (%)', cfg.optimizer ? cfg.optPct : 0]);
+    aoa.push([]);
+    aoa.push([E ? 'ORIENTATIONS' : 'ทิศการวางแผง']);
+    aoa.push([E ? 'Roof' : 'หลังคา', 'kWp', E ? 'Tilt (deg)' : 'ความชัน (°)', E ? 'Facing, compass (deg)' : 'ทิศแบบเข็มทิศ (°)', E ? 'Facing, PVsyst (deg)' : 'ทิศแบบ PVsyst (°)', 'East-West', E ? 'Module' : 'รุ่นแผง', 'γPmax (%/°C)']);
+    out.per.forEach(function (p) {
+      var rf = roofs[p.idx], m = MODULES[rf.module];
+      aoa.push([(E ? 'R' : 'ล') + (p.idx + 1), round(p.res.dcCapacityKwp, 1), rf.tiltUnknown ? 0 : rf.tilt, rf.az, pvsystAz(rf.az), rf.ew ? '✓' : '', m.label,
+        modGamma(m) + (m.gammaOk ? '' : (E ? ' (default)' : ' (ค่าเริ่มต้น)'))]);
+    });
+    aoa.push([]);
+    aoa.push([T('en_disclaimer')]);
+    var ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = [{ wch: 36 }, { wch: 16 }, { wch: 16 }, { wch: 18 }, { wch: 18 }, { wch: 16 }, { wch: 30 }, { wch: 14 }, { wch: 10 }];
+    return ws;
   }
   function snapshot() {
     if (!roofs.length) { $('dlMsg').textContent = I18N.t('dl_none'); return; }
@@ -595,13 +793,25 @@
   function renderCompare() {
     var body = $('cmpBody'); if (!body || !roofs.length) return;
     var keys = []; Array.prototype.forEach.call(document.querySelectorAll('.cmp-check'), function (c) { if (c.checked) keys.push(c.value); });
-    if (!keys.length) { body.innerHTML = '<tr><td colspan="5" class="hint">' + (en() ? 'Select at least 1 model' : 'เลือกรุ่นอย่างน้อย 1') + '</td></tr>'; return; }
-    var rows = keys.map(function (k) { return { m: MODULES[k], agg: computeAll(k).agg }; });
-    var maxKwp = Math.max.apply(null, rows.map(function (r) { return r.agg.kwp; }));
+    if (!keys.length) { body.innerHTML = '<tr><td colspan="6" class="hint">' + (en() ? 'Select at least 1 model' : 'เลือกรุ่นอย่างน้อย 1') + '</td></tr>'; return; }
+    var rows = compareRows(keys);
     body.innerHTML = rows.map(function (r) {
-      var win = r.agg.kwp === maxKwp;
-      return '<tr' + (win ? ' class="win"' : '') + '><td>' + esc(r.m.short) + (win ? ' ★' : '') + '</td><td>' + fmt(r.agg.count) + '</td><td><b>' + fmt(r.agg.kwp, 1) + '</b></td><td>' + fmt(r.agg.weight / 1000, 1) + '</td><td>' + fmt(r.agg.load, 1) + '</td></tr>';
+      return '<tr' + (r.best ? ' class="win"' : '') + '><td>' + esc(r.m.short) + (r.best ? ' ★' : '') + '</td><td>' + fmt(r.agg.count) + '</td><td>' + fmt(r.agg.kwp, 1) + '</td><td>' + fmt(r.agg.weight / 1000, 1) + '</td><td>' + fmt(r.agg.load, 1) + '</td><td><b>' + (r.mwh != null ? fmt(r.mwh, 1) : '—') + '</b></td></tr>';
     }).join('');
+  }
+  // ถ้ามีผลพลังงาน → Best = MWh/ปี สูงสุด · ถ้ายังไม่มี → Best = kWp สูงสุด
+  function compareRows(keys) {
+    var cfg = readEnergyCfg(), useE = energyState === 'ok' && !!wxBuilt;
+    var rows = keys.map(function (k) {
+      var out = computeAll(k), r = { k: k, m: MODULES[k], agg: out.agg, mwh: null };
+      if (useE) { var s = simulateFor(out, wxBuilt, cfg, k); if (s.ok) r.mwh = s.year.eGrid / 1000; }
+      return r;
+    });
+    var score = function (r) { return useE && r.mwh != null ? r.mwh : r.agg.kwp; };
+    var best = Math.max.apply(null, rows.map(score));
+    rows.forEach(function (r) { r.best = score(r) === best; });
+    rows.byEnergy = useE;
+    return rows;
   }
 
   // ---------- add-roof shortcut ----------
@@ -642,6 +852,7 @@
     updateRoofBar(); updateAccSummaries();
     renderRoofs(); renderWalkways(); renderObstacles();
     if (summaryOpen && lastAgg) updateResults(lastAgg, lastPer);
+    renderEnergy(); updateKwacHint();
     if (!roofs.length && $('confirmMsg')) $('confirmMsg').textContent = '';
   }
 
@@ -686,8 +897,12 @@
 
     // พารามิเตอร์ (หัวข้อ 2) — เขียนลงหลังคาที่กำลังทำ
     $('roofType').addEventListener('change', function () { var t = ROOF_TYPES[$('roofType').value]; if (t) { $('tiltUnknown').checked = false; $('tilt').disabled = false; $('tilt').value = t.tilt; } syncActiveFromUI(); runCompute(); });
-    ['module', 'tilt', 'setback', 'rowGap', 'colGap', 'orientation', 'walkwayWidth', 'walkwayEvery'].forEach(function (id) {
+    ['module', 'tilt', 'setback', 'rowGap', 'colGap', 'orientation', 'eastWest', 'walkwayWidth', 'walkwayEvery'].forEach(function (id) {
       $(id).addEventListener('change', function () { syncActiveFromUI(); runCompute(); });
+    });
+    // หัวข้อ 5 · พลังงาน (ค่าทั้งไซต์)
+    ['wxNasa', 'wxMonthly', 'wxCal', 'wxMonthlyText', 'enDcac', 'enInvEff', 'enOpt', 'enOptPct', 'enSoil', 'enShade', 'enMm', 'enQual', 'enWire', 'enLow', 'enIam', 'enUc', 'enAlb'].forEach(function (id) {
+      $(id).addEventListener('change', function () { refreshEnergy(); });
     });
     $('azimuth').addEventListener('input', updateAzLabel);
     $('azimuth').addEventListener('change', function () { syncActiveFromUI(); renderRoofs(); renderRoofDetail(); runCompute(); });
